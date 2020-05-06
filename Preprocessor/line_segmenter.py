@@ -31,20 +31,18 @@ def count_transistions(row):
 if __name__ == '__main__':
     print("Number of processors: ", mp.cpu_count())
 
+    # Load and binarize image
     img = cv2.imread('../data/test-binarized.jpg', 0)
     img_binarized = binarize_image(img)
 
-    plt.imshow(img_binarized)
-    plt.show()
-
+    # Compute projection
     data = np.array(img_binarized)
-
-    print(np.unique(data))
     projection = np.apply_along_axis(count_transistions, COLUMNS, data)
 
+    # Show projection
     plt.plot(projection)
     plt.title("Ink-paper transition projection")
     plt.ylabel("Number of transitions")
     plt.xlabel("Pixel row number")
-    plt.savefig("./results/ink-paper-transition-projection.jpg")
+    # plt.savefig("./results/ink-paper-transition-projection.jpg")
     plt.show()
