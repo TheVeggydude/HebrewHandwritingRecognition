@@ -1,37 +1,34 @@
 import numpy as np
 import multiprocessing as mp
-import time
+import cv2
 
-from PIL import Image
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
+
+
+def binarize_image(image):
+    """
+    Binarizes a given cv2 image using Otsu's method after Gaussian blurring.
+    :param image: cv2 (opencv-python) image.
+    :return: binarized cv2 image.
+    """
+    blur = cv2.GaussianBlur(img, (5, 5), 0)
+    ret3, result = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    return result
+
 
 if __name__ == '__main__':
     print("Number of processors: ", mp.cpu_count())
 
-    data = np.array(Image.open('../data/test-binarized.jpg'))
-    rows = data.shape[0]
-    columns = data.shape[1]
+    img = cv2.imread('../data/test-binarized.jpg', 0)
 
-    print(type(data))
-    # summarize shape
-    print(data.shape)
+    result = binarize_image(img)
 
-    # print data
-    print(data)
+    plt.imshow(result)
+    plt.show()
 
-    # Standard method
-    tic = time.perf_counter()
+    data = np.array(result)
 
-    results = np.apply_along_axis(np.sum, 1, data)
-    inverted_results = 255*columns - results
+    print(np.unique(data))
 
-    # Print timing and results
-    toc = time.perf_counter()
-    print(f"Standard method time: {toc-tic:0.4f} seconds")
-
-    pyplot.plot(inverted_results)
-    pyplot.title("Luminosity projection of non-binary image")
-    pyplot.xlabel("Pixel 'line' number")
-    pyplot.ylabel("Total luminosity")
-    pyplot.savefig("./results/inkProjection.jpg")
-    pyplot.show()
+    plt.hist(data)
+    plt.show()
