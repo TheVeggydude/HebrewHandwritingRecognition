@@ -2,6 +2,7 @@ import numpy as np
 import multiprocessing as mp
 import cv2
 
+from PIL import Image
 from matplotlib import pyplot as plt
 from scipy.signal import find_peaks
 
@@ -49,3 +50,7 @@ if __name__ == '__main__':
     plt.xlabel("Pixel row number")
     plt.savefig("./results/ink-paper-transition-projection-peaks.jpg")
     plt.show()
+
+    # Add detected lines to image
+    data[peaks] = np.zeros(data.shape[COLUMNS])
+    out_image = Image.fromarray(data).save('./results/test_image_with_peaklines.jpg')
