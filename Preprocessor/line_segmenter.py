@@ -4,6 +4,9 @@ import cv2
 
 from matplotlib import pyplot as plt
 
+ROWS = 0
+COLUMNS = 1
+
 
 def binarize_image(image):
     """
@@ -16,19 +19,32 @@ def binarize_image(image):
     return result
 
 
+def count_transistions(row):
+    """
+    Count the number of transitions between values in an image row.
+    :param row: row in binarized image.
+    :return: number of transitions in row.
+    """
+    return len(np.argwhere(np.diff(row)).squeeze())
+
+
 if __name__ == '__main__':
     print("Number of processors: ", mp.cpu_count())
 
     img = cv2.imread('../data/test-binarized.jpg', 0)
+    img_binarized = binarize_image(img)
 
-    result = binarize_image(img)
-
-    plt.imshow(result)
+    plt.imshow(img_binarized)
     plt.show()
 
-    data = np.array(result)
+    data = np.array(img_binarized)
 
     print(np.unique(data))
+    projection = np.apply_along_axis(count_transistions, COLUMNS, data)
 
-    plt.hist(data)
+    plt.plot(projection)
+    plt.title("Ink-paper transition projection")
+    plt.ylabel("Number of transitions")
+    plt.xlabel("Pixel row number")
+    plt.savefig("./results/ink-paper-transition-projection.jpg")
     plt.show()
