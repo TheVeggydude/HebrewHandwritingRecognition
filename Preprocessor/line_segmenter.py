@@ -3,6 +3,7 @@ import multiprocessing as mp
 import cv2
 
 from matplotlib import pyplot as plt
+from scipy.signal import find_peaks
 
 ROWS = 0
 COLUMNS = 1
@@ -38,11 +39,13 @@ if __name__ == '__main__':
     # Compute projection
     data = np.array(img_binarized)
     projection = np.apply_along_axis(count_transistions, COLUMNS, data)
+    peaks, properties = find_peaks(projection, prominence=1, distance=100)
 
     # Show projection
     plt.plot(projection)
-    plt.title("Ink-paper transition projection")
+    plt.plot(peaks, projection[peaks], "x")
+    plt.title("Ink-paper transition projection with peaks")
     plt.ylabel("Number of transitions")
     plt.xlabel("Pixel row number")
-    # plt.savefig("./results/ink-paper-transition-projection.jpg")
+    plt.savefig("./results/ink-paper-transition-projection-peaks.jpg")
     plt.show()
