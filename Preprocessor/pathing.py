@@ -94,4 +94,5 @@ def find_path(row, image):
 
         # Check every possible direction
         for neighbor in get_neighbors(state):
+            pass
             # TODO make the actual moves.
