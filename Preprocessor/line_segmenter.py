@@ -5,6 +5,8 @@ import cv2
 from PIL import Image
 from matplotlib import pyplot as plt
 from scipy.signal import find_peaks
+from Preprocessor.pathing import find_path
+
 
 ROWS = 0
 COLUMNS = 1
@@ -53,10 +55,10 @@ if __name__ == '__main__':
 
     print("Number of processors: ", mp.cpu_count())
 
-    for image in range(0, 3):
+    for i in range(0, 1):
 
         # Load and binarize image
-        img = cv2.imread(f"../data/test{image}.jpg", 0)
+        img = cv2.imread(f"../data/test{i}.jpg", 0)
         img_binarized = binarize_image(img)
 
         # Compute projection & find line starts.
@@ -64,16 +66,20 @@ if __name__ == '__main__':
         projection = np.apply_along_axis(count_transistions, COLUMNS, data)
         line_starts = find_line_starts(projection)
 
+        # Generate segment lines per start position
+        # segment_lines = [find_path(start, data) for start in line_starts]
+        find_path(0, None)
+
         # Show projection
         plt.plot(projection)
         plt.plot(line_starts, projection[line_starts], "x")
         plt.title("Ink-paper transition projection with line starts")
         plt.ylabel("Number of transitions")
         plt.xlabel("Pixel row number")
-        plt.savefig(f"./results/test{image}-projection-minima.jpg")
+        plt.savefig(f"./results/test{i}-projection-minima.jpg")
         plt.show()
 
         # Add detected lines to image
         line_starts += [start+1 for start in line_starts] + [start-1 for start in line_starts]
         data[line_starts] = np.zeros(data.shape[COLUMNS])
-        out_segment_image = Image.fromarray(data).save(f"./results/test{image}_segmentlines.jpg")
+        out_segment_image = Image.fromarray(data).save(f"./results/test{i}_segmentlines.jpg")
