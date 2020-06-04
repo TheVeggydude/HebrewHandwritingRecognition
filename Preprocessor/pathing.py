@@ -56,7 +56,7 @@ def get_neighbors(state):
             yield state.coords[0] + d_row, state.coords[1] + d_column
 
 
-def get_move_cost(coords, neighbor, pixel, goal):
+def get_move_cost(coords, neighbor, pixel, goal_height):
     """
     For now, just give high cost to moving through black pixels.
     :param coords:
@@ -65,11 +65,9 @@ def get_move_cost(coords, neighbor, pixel, goal):
     :return:
     """
     cost = 100 if not pixel else 1
-    cost += 20 if coords[0] != goal[0] else 0
+    cost += 20 if neighbor[0] != goal_height else 0
 
     return cost
-    # Make make vertical move > diagonal move > horizontal move to show that straight lines are preferred. Moreover,
-    # make moves going back to the starting line less costly.
 
 
 def compute_heuristic(coords, goal):
@@ -123,14 +121,12 @@ def find_path(row, image):
 
             # Only handle unvisited neighbours
             if neighbor not in visited:
-                new_cost = state.cost + get_move_cost(state.coords, neighbor, image[neighbor[0], neighbor[1]], goal)
+                new_cost = state.cost + get_move_cost(state.coords, neighbor, image[neighbor[0], neighbor[1]], goal[0])
                 priority = new_cost + compute_heuristic(neighbor, goal)
                 new_state = State(neighbor, state, new_cost, priority)
                 queue.put(new_state)
 
-                print(f"{state.coords} --> {neighbor}: cost: {new_cost}, priority: {priority}")
-
-        exit()
+                # print(f"{state.coords} --> {neighbor}: cost: {new_cost}, priority: {priority}")
 
     # Path not found, throw temp error
     raise ValueError
