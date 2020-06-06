@@ -44,16 +44,30 @@ def list_path(state):
     return list_path(state.parent) + [state.coords]
 
 
-def get_neighbors(state):
+def get_neighbors(state, data):
     """
     Iteration method that yields all legal neighboring coordinates.
     :param state: State object to get neighbours for.
+    :param data: Binarized image data.
     :return: Neighboring coordinates and corresponding move cost per iteration.
     """
+    max_values = np.shape(data)
 
     for d_row in [1, 0, -1]:
-        for d_column in [1, 0]:
-            yield state.coords[0] + d_row, state.coords[1] + d_column
+        new_row = state.coords[0] + d_row
+        if new_row >= max_values[0] or new_row < 0:  # Don't look for out of bounds values
+            continue
+
+        columns = [1, 0] if d_row != 0 else [1]  # Don't check for zero-offset "neighbors"
+        for d_column in columns:
+            new_column = state.coords[1] + d_column
+            if new_column >= max_values[1] or new_column < 0:  # Don't look for out of bounds values
+                continue
+
+            if data[new_row, new_column] == 1:  # Don't go through black pixels
+                continue
+
+            yield new_row, new_column
 
 
 def get_move_cost(coords, neighbor, pixel, goal_height):
@@ -64,8 +78,8 @@ def get_move_cost(coords, neighbor, pixel, goal_height):
     :param pixel:
     :return:
     """
-    cost = 100 if not pixel else 1
-    cost += 20 if neighbor[0] != goal_height else 0
+    cost = 1
+    # cost += 1000 if neighbor[0] != goal_height else 0
 
     return cost
 
@@ -92,7 +106,7 @@ def find_path(row, image):
 
     # Start and goal coordinates
     start = (row, 0)
-    goal = (row, np.shape(image)[COLUMNS])
+    goal = (row, np.shape(image)[COLUMNS]-1)
 
     # Create starting state and add to queue
     state = State(start, None)
@@ -113,11 +127,11 @@ def find_path(row, image):
         visited.add(state.coords)
 
         # Check for goal state
-        if state.coords == goal:
+        if state.coords[0] == goal[0] and state.coords[1] == goal[1]:
             return list_path(state)  # returns the list of coordinates
 
         # Check every possible direction
-        for neighbor in get_neighbors(state):
+        for neighbor in get_neighbors(state, image):
 
             # Only handle unvisited neighbours
             if neighbor not in visited:
@@ -126,8 +140,18 @@ def find_path(row, image):
                 new_state = State(neighbor, state, new_cost, priority)
                 queue.put(new_state)
 
-                # print(f"{state.coords} --> {neighbor}: cost: {new_cost}, priority: {priority}")
-
     # Path not found, throw temp error
     raise ValueError
     # return None
+
+
+if __name__ == '__main__':
+
+    data = np.zeros(shape=(5, 5))
+    data[1:4, 2] = 1
+
+    path = find_path(2, data)
+    print("Path found: ")
+    for elem in path:
+        data[elem[0], elem[1]] = -1
+    print(data)
