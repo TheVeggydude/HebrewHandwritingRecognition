@@ -14,18 +14,6 @@ class State:
         self.cost = cost
         self.priority = priority
 
-    def print_path_helper(self):
-        if self.parent is not None:
-            self.parent.print_path_helper()
-            string = str(self.parent.coords) + " -> "
-            string += str(self.coords)
-            string += " cost: "+str(self.cost)
-            print(string)
-
-    def print_path(self):
-        self.print_path_helper()
-        print()
-
     # Function used to compare two states for the priority queue
     def __lt__(self, other):
         return self.priority < other.priority
@@ -146,6 +134,9 @@ def find_path(row, image):
 
 
 if __name__ == '__main__':
+    """
+    For testing purposes. Run the path-finding on a simple maze.
+    """
 
     data = np.zeros(shape=(5, 5))
     data[1:4, 2] = 1
