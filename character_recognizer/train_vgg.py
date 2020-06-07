@@ -86,7 +86,24 @@ class SmallVGGNet:
 		# return the constructed network architecture
 		return model
 
+# Resizes images to 64x64 while keeping aspect ratio by adding white pixels
+def Reformat_Image(ImageFilePath):
 
+    from PIL import Image
+    image = Image.open(ImageFilePath, 'r')
+    image_size = image.size
+    width = image_size[0]
+    height = image_size[1]
+
+    bigside = 64
+
+    background = Image.new('RGB', (bigside, bigside), (255,255,255))
+    offset = (int(round(((bigside - width) / 2), 0)), int(round(((bigside - height) / 2),0)))
+
+    background.paste(image, offset)
+    return background
+    # background.save('out.png')
+	# print("Image has been resized !")
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -99,7 +116,6 @@ ap.add_argument("-l", "--label-bin", required=True,
 ap.add_argument("-p", "--plot", required=True,
 	help="path to output accuracy/loss plot")
 args = vars(ap.parse_args())
-
 
 # initialize the data and labels
 print("[INFO] loading images...")
@@ -114,7 +130,13 @@ for imagePath in imagePaths:
 	# load the image, resize it to 64x64 pixels (the required input
 	# spatial dimensions of SmallVGGNet), and store the image in the
 	# data list
+
+	# Resizes images to 64x64 while keeping aspect ratio
+	# image = np.array(Reformat_Image(imagePath))
+	# image = image[:, :, ::-1].copy()
+
 	image = cv2.imread(imagePath)
+
 	image = cv2.resize(image, (64, 64))
 	data.append(image)
 	# extract the class label from the image path and update the
@@ -148,13 +170,13 @@ model = SmallVGGNet.build(width=64, height=64, depth=3,
 # initialize our initial learning rate, # of epochs to train for,
 # and batch size
 INIT_LR = 0.01
-EPOCHS = 30
+EPOCHS = 60
 BS = 32
 # initialize the model and optimizer (you'll want to use
 # binary_crossentropy for 2-class classification)
 print("[INFO] training network...")
 opt = SGD(lr=INIT_LR, decay=INIT_LR / EPOCHS)
-model.compile(loss="categorical_crossentropy", optimizer="nadam",
+model.compile(loss="categorical_crossentropy", optimizer="rmsprop",
 	metrics=["accuracy"])
 # train the network
 H = model.fit_generator(aug.flow(trainX, trainY, batch_size=BS),
@@ -177,7 +199,7 @@ plt.plot(N, H.history["loss"], label="train_loss")
 plt.plot(N, H.history["val_loss"], label="val_loss")
 plt.plot(N, H.history["accuracy"], label="train_acc")
 plt.plot(N, H.history["val_accuracy"], label="val_acc")
-plt.title("Training Loss and Accuracy (SmallVGGNet+RMSprop)")
+plt.title("Training Loss and Accuracy (SmallVGGNet+RMSProp)")
 plt.xlabel("Epoch #")
 plt.ylabel("Loss/Accuracy")
 plt.legend()
