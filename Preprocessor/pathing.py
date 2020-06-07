@@ -101,7 +101,7 @@ def find_path(row, image):
     Generates a line-path from the starting point using the A* path planning method.
     :param row: Row number for which to start a segment at.
     :param image: Binarized image data in NumPy array.
-    :return: List of coordinate tuples describing the optimal path.
+    :return: 2D numpy array of coordinates describing the optimal path.
     """
 
     # Start and goal coordinates
@@ -128,7 +128,7 @@ def find_path(row, image):
 
         # Check for goal state
         if state.coords[0] == goal[0] and state.coords[1] == goal[1]:
-            return list_path(state)  # returns the list of coordinates
+            return np.asarray(list_path(state))  # returns the array of coordinates
 
         # Check every possible direction
         for neighbor in get_neighbors(state, image):
@@ -152,6 +152,5 @@ if __name__ == '__main__':
 
     path = find_path(2, data)
     print("Path found: ")
-    for elem in path:
-        data[elem[0], elem[1]] = -1
+    data[path[:, 0], path[:, 1]] = -1
     print(data)
