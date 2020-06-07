@@ -52,7 +52,7 @@ def get_neighbors(state, data):
             if new_column >= max_values[1] or new_column < 0:  # Don't look for out of bounds values
                 continue
 
-            if data[new_row, new_column] == 1:  # Don't go through black pixels
+            if data[new_row, new_column] == 0:  # Don't go through black pixels
                 continue
 
             yield new_row, new_column
@@ -138,8 +138,8 @@ if __name__ == '__main__':
     For testing purposes. Run the path-finding on a simple maze.
     """
 
-    data = np.zeros(shape=(5, 5))
-    data[1:4, 2] = 1
+    data = np.full((5, 5), 255)
+    data[1:4, 2] = 0
 
     path = find_path(2, data)
     print("Path found: ")
