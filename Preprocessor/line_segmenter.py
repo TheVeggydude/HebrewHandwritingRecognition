@@ -1,6 +1,7 @@
 import numpy as np
 import multiprocessing as mp
 import cv2
+import sys
 
 from PIL import Image
 from matplotlib import pyplot as plt
@@ -53,11 +54,13 @@ def find_line_starts(projection):
 
 if __name__ == '__main__':
 
+    sys.setrecursionlimit(10 ** 6)
     print("Number of processors: ", mp.cpu_count())
 
-    for i in range(0, 1):
+    for i in range(2, 3):
 
         # Load and binarize image
+        print(f"Working on image{i}")
         img = cv2.imread(f"../data/test{i}.jpg", 0)
         img_binarized = binarize_image(img)
 
@@ -67,8 +70,7 @@ if __name__ == '__main__':
         line_starts = find_line_starts(projection)
 
         # Generate segment lines per start position
-        segment_lines = [find_path(start, data) for start in line_starts[:1]]
-        print(segment_lines)
+        segment_lines = [find_path(start, data) for start in line_starts]
 
         # Show projection
         plt.plot(projection)
@@ -77,9 +79,16 @@ if __name__ == '__main__':
         plt.ylabel("Number of transitions")
         plt.xlabel("Pixel row number")
         plt.savefig(f"./results/test{i}-projection-minima.jpg")
-        plt.show()
 
-        # Add detected lines to image
-        line_starts += [start+1 for start in line_starts] + [start-1 for start in line_starts]
-        data[line_starts] = np.zeros(data.shape[COLUMNS])
+        for line in segment_lines:
+
+            # Add (dilated) lines to image
+            data[line[:, 0], line[:, 1]] = 0
+            data[line[:, 0]-1, line[:, 1]] = 0
+            data[line[:, 0]+1, line[:, 1]] = 0
+
+        # Reference lines
+        # line_starts += [start + 1 for start in line_starts] + [start - 1 for start in line_starts]
+        # data[line_starts] = np.zeros(data.shape[COLUMNS])
+
         out_segment_image = Image.fromarray(data).save(f"./results/test{i}_segmentlines.jpg")

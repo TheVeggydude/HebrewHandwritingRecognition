@@ -32,7 +32,7 @@ def list_path(state):
     return list_path(state.parent) + [state.coords]
 
 
-def get_neighbors(state, data):
+def get_neighbors(state, data, goal):
     """
     Iteration method that yields all legal neighboring coordinates.
     :param state: State object to get neighbours for.
@@ -44,6 +44,9 @@ def get_neighbors(state, data):
     for d_row in [1, 0, -1]:
         new_row = state.coords[0] + d_row
         if new_row >= max_values[0] or new_row < 0:  # Don't look for out of bounds values
+            continue
+
+        if abs(new_row - goal[0]) >= 20:  # Don't stray more than 20 rows from target line
             continue
 
         columns = [1, 0] if d_row != 0 else [1]  # Don't check for zero-offset "neighbors"
@@ -58,7 +61,7 @@ def get_neighbors(state, data):
             yield new_row, new_column
 
 
-def get_move_cost(coords, neighbor, pixel, goal_height):
+def get_move_cost(coords, neighbor, pixel, goal):
     """
     For now, just give high cost to moving through black pixels.
     :param coords:
@@ -66,7 +69,7 @@ def get_move_cost(coords, neighbor, pixel, goal_height):
     :param pixel:
     :return:
     """
-    cost = 1
+    cost = 1 + abs(coords[0] - goal[0]) ^ 2
     # cost += 1000 if neighbor[0] != goal_height else 0
 
     return cost
@@ -92,6 +95,8 @@ def find_path(row, image):
     :return: 2D numpy array of coordinates describing the optimal path.
     """
 
+    print(f"Finding path for row {row}...")
+
     # Start and goal coordinates
     start = (row, 0)
     goal = (row, np.shape(image)[COLUMNS]-1)
@@ -107,8 +112,11 @@ def find_path(row, image):
     # Loop until all options are used up
     while not queue.empty():
 
-        if len(visited) % 100 == 0:
+        if len(visited) % 1000 == 0 and len(visited) != 0:
             print(len(visited))
+
+        if len(visited) > 30000:
+            exit(-1)
 
         # Get next state and add to visited set
         state = queue.get()
@@ -119,11 +127,11 @@ def find_path(row, image):
             return np.asarray(list_path(state))  # returns the array of coordinates
 
         # Check every possible direction
-        for neighbor in get_neighbors(state, image):
+        for neighbor in get_neighbors(state, image, goal):
 
             # Only handle unvisited neighbours
             if neighbor not in visited:
-                new_cost = state.cost + get_move_cost(state.coords, neighbor, image[neighbor[0], neighbor[1]], goal[0])
+                new_cost = state.cost + get_move_cost(state.coords, neighbor, image[neighbor[0], neighbor[1]], goal)
                 priority = new_cost + compute_heuristic(neighbor, goal)
                 new_state = State(neighbor, state, new_cost, priority)
                 queue.put(new_state)
@@ -138,7 +146,7 @@ if __name__ == '__main__':
     For testing purposes. Run the path-finding on a simple maze.
     """
 
-    data = np.full((5, 5), 255)
+    data = np.full((10, 10), 255)
     data[1:4, 2] = 0
 
     path = find_path(2, data)
