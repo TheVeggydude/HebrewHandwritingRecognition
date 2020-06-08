@@ -97,21 +97,8 @@ def find_path(row, image):
     """
 
     print(f"Finding path for row {row}...")
-    limits = [50, 100]
-
-    # Start and goal coordinates
-    barriers = np.where(image[row, :] == 0)[0]
-    start_column = barriers[0] - limits[0] if len(barriers) > 0 and barriers[0] > limits[0] else 0
-
-    img_width = np.shape(image)[COLUMNS]-1
-    goal_column = barriers[-1] + limits[0] if len(barriers) > 1 and barriers[-1] + limits[0] < img_width else img_width
-
-    image = image[row-100:row+101, start_column:goal_column]
-    sub_shape = np.shape(image)
-
-    start = (int(sub_shape[0] / 2), 0)
-    goal = (int(sub_shape[0] / 2), sub_shape[1]-1)
-    print(start, goal)
+    start = (row, 0)
+    goal = (row, np.shape(image)[COLUMNS]-1)
 
     # Create starting state and add to queue
     state = State(start, None)
@@ -125,7 +112,7 @@ def find_path(row, image):
     # Loop until all options are used up
     while not queue.empty():
 
-        if len(visited) % 10 == 0 and len(visited) != 0:
+        if len(visited) % 1000 == 0 and len(visited) != 0:
             print(len(visited))
 
         # Get next state and add to visited set
@@ -147,14 +134,6 @@ def find_path(row, image):
                 new_state = State(neighbor, state, new_cost, priority)
                 queue.put(new_state)
 
-    image[path[:, 0], path[:, 1]] = 0
-    image[path[:, 0] - 1, path[:, 1]] = 0
-    image[path[:, 0] + 1, path[:, 1]] = 0
-
-    test_image = Image.fromarray(image).save(f"./results/fuck.jpg")
-
-    print(path)
-    exit(-1)
     return path
 
 
