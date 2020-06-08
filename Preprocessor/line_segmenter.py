@@ -70,7 +70,9 @@ if __name__ == '__main__':
         line_starts = find_line_starts(projection)
 
         # Generate segment lines per start position
-        segment_lines = [find_path(start, data) for start in line_starts]
+        segment_lines = [find_path(start, data) for start in line_starts[:1]]
+        print(segment_lines)
+        exit(-1)
 
         # Show projection
         plt.plot(projection)

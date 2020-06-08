@@ -1,6 +1,7 @@
 import numpy as np
 
 from queue import PriorityQueue
+from PIL import Image
 
 ROWS = 0
 COLUMNS = 1
@@ -41,15 +42,15 @@ def get_neighbors(state, data, goal):
     """
     max_values = np.shape(data)
 
-    for d_row in [1, 0, -1]:
+    for d_row in [0, 1, -1]:
         new_row = state.coords[0] + d_row
         if new_row >= max_values[0] or new_row < 0:  # Don't look for out of bounds values
             continue
 
-        if abs(new_row - goal[0]) >= 20:  # Don't stray more than 20 rows from target line
+        if abs(new_row - goal[0]) >= 100:  # Don't stray more than 20 rows from target line
             continue
 
-        columns = [1, 0] if d_row != 0 else [1]  # Don't check for zero-offset "neighbors"
+        columns = [0, 1] if d_row != 0 else [1]   # Don't check for zero-offset "neighbors"
         for d_column in columns:
             new_column = state.coords[1] + d_column
             if new_column >= max_values[1] or new_column < 0:  # Don't look for out of bounds values
@@ -69,7 +70,7 @@ def get_move_cost(coords, neighbor, pixel, goal):
     :param pixel:
     :return:
     """
-    cost = 1 + abs(coords[0] - goal[0]) ^ 2
+    cost = 1  # + abs(coords[0] - goal[0])**2
     # cost += 1000 if neighbor[0] != goal_height else 0
 
     return cost
@@ -96,10 +97,21 @@ def find_path(row, image):
     """
 
     print(f"Finding path for row {row}...")
+    limits = [50, 100]
 
     # Start and goal coordinates
-    start = (row, 0)
-    goal = (row, np.shape(image)[COLUMNS]-1)
+    barriers = np.where(image[row, :] == 0)[0]
+    start_column = barriers[0] - limits[0] if len(barriers) > 0 and barriers[0] > limits[0] else 0
+
+    img_width = np.shape(image)[COLUMNS]-1
+    goal_column = barriers[-1] + limits[0] if len(barriers) > 1 and barriers[-1] + limits[0] < img_width else img_width
+
+    image = image[row-100:row+101, start_column:goal_column]
+    sub_shape = np.shape(image)
+
+    start = (int(sub_shape[0] / 2), 0)
+    goal = (int(sub_shape[0] / 2), sub_shape[1]-1)
+    print(start, goal)
 
     # Create starting state and add to queue
     state = State(start, None)
@@ -108,15 +120,13 @@ def find_path(row, image):
 
     # Keep track of visited list
     visited = set()
+    path = None
 
     # Loop until all options are used up
     while not queue.empty():
 
-        if len(visited) % 1000 == 0 and len(visited) != 0:
+        if len(visited) % 10 == 0 and len(visited) != 0:
             print(len(visited))
-
-        if len(visited) > 30000:
-            exit(-1)
 
         # Get next state and add to visited set
         state = queue.get()
@@ -124,7 +134,8 @@ def find_path(row, image):
 
         # Check for goal state
         if state.coords[0] == goal[0] and state.coords[1] == goal[1]:
-            return np.asarray(list_path(state))  # returns the array of coordinates
+            path = np.asarray(list_path(state))  # returns the array of coordinates
+            break
 
         # Check every possible direction
         for neighbor in get_neighbors(state, image, goal):
@@ -136,9 +147,15 @@ def find_path(row, image):
                 new_state = State(neighbor, state, new_cost, priority)
                 queue.put(new_state)
 
-    # Path not found, throw temp error
-    raise ValueError
-    # return None
+    image[path[:, 0], path[:, 1]] = 0
+    image[path[:, 0] - 1, path[:, 1]] = 0
+    image[path[:, 0] + 1, path[:, 1]] = 0
+
+    test_image = Image.fromarray(image).save(f"./results/fuck.jpg")
+
+    print(path)
+    exit(-1)
+    return path
 
 
 if __name__ == '__main__':
