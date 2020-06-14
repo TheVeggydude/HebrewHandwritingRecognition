@@ -2,6 +2,7 @@ import numpy as np
 
 from queue import PriorityQueue
 from PIL import Image
+from matplotlib import pyplot as plt
 
 ROWS = 0
 COLUMNS = 1
@@ -20,17 +21,19 @@ class State:
         return self.priority < other.priority
 
 
-def list_path(state):
+def list_path(state, column_offset=0):
     """
     Generates the list of the coordinates in the path leading up to the current State.
+    :param column_offset:
     :param state: State object that you want the path to generated for.
     :return: List of tuples, each tuple is a coordinate.
     """
+    coords = [(state.coords[0], state.coords[1] + column_offset)]
     if state.parent is None:  # Base case, so return coords
-        return [state.coords]
+        return coords
 
     # Recursive case, so return using recursive call
-    return list_path(state.parent) + [state.coords]
+    return list_path(state.parent, column_offset) + coords
 
 
 def get_neighbors(state, data, goal):
@@ -64,15 +67,13 @@ def get_neighbors(state, data, goal):
 
 def get_move_cost(coords, neighbor, pixel, goal):
     """
-    For now, just give high cost to moving through black pixels.
+    Cost = 1
     :param coords:
     :param neighbor:
     :param pixel:
     :return:
     """
-    cost = 1  # + abs(coords[0] - goal[0])**2
-    # cost += 1000 if neighbor[0] != goal_height else 0
-
+    cost = 1
     return cost
 
 
@@ -88,6 +89,16 @@ def compute_heuristic(coords, goal):
     return max(dx, dy)
 
 
+def count_transitions(column):
+    """
+    Count the number of transitions between values in an image row.
+    :param column: row in binarized image.
+    :return: number of transitions in row.
+    """
+
+    return len(np.argwhere(np.diff(column)).squeeze())
+
+
 def find_path(row, image):
     """
     Generates a line-path from the starting point using the A* path planning method.
@@ -97,8 +108,38 @@ def find_path(row, image):
     """
 
     print(f"Finding path for row {row}...")
+    window_buffer = 10
+    max_width = np.shape(image)[COLUMNS] - 1
+
+    relevant_columns = [0, max_width]
+
+    # Find first column that shows a pixel.
+    for column in range(image.shape[COLUMNS]):
+        transitions = count_transitions(image[:, column])
+        if transitions > 0:
+            relevant_columns[0] = column
+            break
+
+    # Find last column that shows a pixel.
+    for column in range(image.shape[COLUMNS]-1, 0, -1):
+        transitions = count_transitions(image[:, column])
+        if transitions > 0:
+            relevant_columns[1] = column
+            break
+
+    # Take subset of image as current 'maze'
+    left_margin = relevant_columns[0]
+    left_margin = left_margin - window_buffer if left_margin - window_buffer > 0 else 0
+
+    right_margin = relevant_columns[1]
+    right_margin = right_margin + window_buffer if right_margin + window_buffer < max_width else max_width
+
+    sub_image = image[:, left_margin: right_margin]
+
+    # Initiate straight line as path up to area of interest
+    path = np.asarray([[row, column] for column in np.arange(left_margin)])
     start = (row, 0)
-    goal = (row, np.shape(image)[COLUMNS]-1)
+    goal = (row, np.shape(sub_image)[COLUMNS]-1)
 
     # Create starting state and add to queue
     state = State(start, None)
@@ -107,13 +148,9 @@ def find_path(row, image):
 
     # Keep track of visited list
     visited = set()
-    path = None
 
     # Loop until all options are used up
     while not queue.empty():
-
-        if len(visited) % 1000 == 0 and len(visited) != 0:
-            print(len(visited))
 
         # Get next state and add to visited set
         state = queue.get()
@@ -121,20 +158,21 @@ def find_path(row, image):
 
         # Check for goal state
         if state.coords[0] == goal[0] and state.coords[1] == goal[1]:
-            path = np.asarray(list_path(state))  # returns the array of coordinates
-            break
+            app_path = np.asarray([[row, column] for column in np.arange(right_margin + 1, max_width)])
+            segment = np.asarray(list_path(state, left_margin))
+            path = np.concatenate((path, segment))  # append the found path
+            path = np.concatenate((path, app_path))
+            return path
 
         # Check every possible direction
-        for neighbor in get_neighbors(state, image, goal):
+        for neighbor in get_neighbors(state, sub_image, goal):
 
             # Only handle unvisited neighbours
             if neighbor not in visited:
-                new_cost = state.cost + get_move_cost(state.coords, neighbor, image[neighbor[0], neighbor[1]], goal)
+                new_cost = state.cost + get_move_cost(state.coords, neighbor, sub_image[neighbor[0], neighbor[1]], goal)
                 priority = new_cost + compute_heuristic(neighbor, goal)
                 new_state = State(neighbor, state, new_cost, priority)
                 queue.put(new_state)
-
-    return path
 
 
 if __name__ == '__main__':

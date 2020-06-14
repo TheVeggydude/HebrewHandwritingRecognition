@@ -25,7 +25,7 @@ def binarize_image(image):
     return result
 
 
-def count_transistions(row):
+def count_transitions(row):
     """
     Count the number of transitions between values in an image row.
     :param row: row in binarized image.
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     sys.setrecursionlimit(10 ** 6)
     print("Number of processors: ", mp.cpu_count())
 
-    for i in range(2, 3):
+    for i in range(0, 3):
 
         # Load and binarize image
         print(f"Working on image{i}")
@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
         # Compute projection & find line starts.
         data = np.array(img_binarized)
-        projection = np.apply_along_axis(count_transistions, COLUMNS, data)
+        projection = np.apply_along_axis(count_transitions, COLUMNS, data)
         line_starts = find_line_starts(projection)
 
         # Generate segment lines per start position
@@ -80,15 +80,17 @@ if __name__ == '__main__':
         plt.xlabel("Pixel row number")
         plt.savefig(f"./results/test{i}-projection-minima.jpg")
 
-        for line in segment_lines:
+        for path in segment_lines:
 
             # Add (dilated) lines to image
-            data[line[:, 0], line[:, 1]] = 0
-            data[line[:, 0]-1, line[:, 1]] = 0
-            data[line[:, 0]+1, line[:, 1]] = 0
+            data[path[:, 0], path[:, 1]] = 0
+            data[path[:, 0] - 1, path[:, 1]] = 0
+            data[path[:, 0] + 1, path[:, 1]] = 0
 
         # Reference lines
         # line_starts += [start + 1 for start in line_starts] + [start - 1 for start in line_starts]
         # data[line_starts] = np.zeros(data.shape[COLUMNS])
 
         out_segment_image = Image.fromarray(data).save(f"./results/test{i}_segmentlines.jpg")
+
+    print(f"Done!")
