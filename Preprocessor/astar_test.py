@@ -104,6 +104,7 @@ def a_star(row, image):
             g = compute_g(move) + current.g_score
             h = compute_h(neighbor, goal_coords)
             f = g + h
+            new_elem = Node(neighbor, current, f, g, h)
 
             # Append neighbor to open list
             flag, elem = check_in_list(neighbor, open_list)
@@ -112,12 +113,10 @@ def a_star(row, image):
                 # If neighbor's f score is lower than the one in the open list
                 if f < elem.f_score:
                     open_list.remove(elem)
-                    new_elem = Node(neighbor, current, f, g, h)
                     open_list.append(new_elem)
                 else:
                     continue
             else:
-                new_elem = Node(neighbor, current, f, g, h)
                 open_list.append(new_elem)
 
 
@@ -137,15 +136,15 @@ def get_lowest_f_node(open_list):
 
 
 def find_path(row, image):
-    pointlist = []
-    end = a_star(row, image)
+    points = []
+    node = a_star(row, image)
 
-    while end is not None:
-        pointlist.append(end.coords)
-        end = end.parent
+    # Backtrack from ending node to initial node with parent `None`
+    while node is not None:
+        points.append(tuple(node.coords))
+        node = node.parent
 
-    # TODO return np array
-    return [cord.x for cord in pointlist], [cord.y for cord in pointlist]
+    return np.asarray(points)[::-1]  # Flipped so starting node is at arr[0]
 
 
 # def extract_path(x1, x2, y1, y2):
@@ -209,13 +208,14 @@ if __name__ == '__main__':
 
         # Compute projection & find line starts.
         img_arr = np.array(img_binarized)
+        print(f"Image shape: {img_arr.shape}")
         projection = np.apply_along_axis(count_transitions, COLUMNS, img_arr)
         line_starts = find_line_starts(projection)
 
         for index, start in enumerate(line_starts):
             print(f"Finding path for line at row {start} ({index+1}/{len(line_starts)}).")
-            x, y = find_path(start, img_arr)
-            plt.plot(y, x)
+            path = find_path(start, img_arr)
+            plt.plot(path[:, COLUMNS], path[:, ROWS])
         plt.imshow(img_arr, 'gray')
         plt.show()
 
