@@ -8,8 +8,12 @@ from collections import namedtuple
 from scipy.signal import find_peaks
 
 
+# Constants
 ROWS = 0
 COLUMNS = 1
+WINDOW_BUFFER = 10
+
+# Named tuple definitions
 Point = namedtuple("Point", ["x", "y"])
 
 
@@ -67,7 +71,7 @@ def get_neighbors(state, image):
 
 def a_star(row, image):
 
-    # TODO update open to dict to improve speed
+    # TODO update open to dict or Hash Array Mapped Tries (HAMT) to improve speed
     open_list = []
     visited = set()
 
@@ -136,15 +140,51 @@ def get_lowest_f_node(open_list):
 
 
 def find_path(row, image):
-    points = []
-    node = a_star(row, image)
+    max_width = np.shape(image)[COLUMNS] - 1
+
+    # Find speed up variables
+    left_margin, right_margin, sub_image = extract_sub_image(image, max_width)
+
+    # Find path to end node
+    node = a_star(row, sub_image)
 
     # Backtrack from ending node to initial node with parent `None`
+    prepend_points = np.asarray([[row, column] for column in np.arange(left_margin)])
+    append_points = np.asarray([[row, column] for column in np.arange(right_margin + 1, max_width)])
+    points = []
     while node is not None:
-        points.append(tuple(node.coords))
+        points.append((node.coords.x, node.coords.y + left_margin))
         node = node.parent
+    points = np.asarray(points)[::-1]  # Flipped so starting node is at arr[0]
 
-    return np.asarray(points)[::-1]  # Flipped so starting node is at arr[0]
+    return np.concatenate((prepend_points, points, append_points))
+
+
+def extract_sub_image(image, max_width):
+    relevant_columns = [0, max_width]
+
+    # Find first column that shows a pixel.
+    for column in range(image.shape[COLUMNS]):
+        transitions = count_transitions(image[:, column])
+        if transitions > 0:
+            relevant_columns[0] = column
+            break
+
+    # Find last column that shows a pixel.
+    for column in range(image.shape[COLUMNS] - 1, 0, -1):
+        transitions = count_transitions(image[:, column])
+        if transitions > 0:
+            relevant_columns[1] = column
+            break
+
+    # Compute margins
+    left_margin = relevant_columns[0]
+    left_margin = left_margin - WINDOW_BUFFER if left_margin - WINDOW_BUFFER > 0 else 0
+
+    right_margin = relevant_columns[1]
+    right_margin = right_margin + WINDOW_BUFFER if right_margin + WINDOW_BUFFER < max_width else max_width
+
+    return left_margin, right_margin, image[:, left_margin: right_margin]
 
 
 # def extract_path(x1, x2, y1, y2):
@@ -200,7 +240,7 @@ def find_line_starts(projection):
 
 if __name__ == '__main__':
 
-    for i in range(2, 3):
+    for i in range(0, 3):
         # Load and binarize image
         print(f"Working on test image {i}")
         img = cv2.imread(f"../data/test{i}.jpg", 0)
@@ -215,6 +255,8 @@ if __name__ == '__main__':
         for index, start in enumerate(line_starts):
             print(f"Finding path for line at row {start} ({index+1}/{len(line_starts)}).")
             path = find_path(start, img_arr)
+
+            # TODO verify path integrity
             plt.plot(path[:, COLUMNS], path[:, ROWS])
         plt.imshow(img_arr, 'gray')
         plt.show()
