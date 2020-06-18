@@ -65,7 +65,7 @@ def get_neighbors(state, data, goal):
             yield new_row, new_column
 
 
-def get_move_cost(coords, neighbor, pixel, goal):
+def get_move_cost(coords, neighbor, goal):
     """
     Cost = 1
     :param coords:
@@ -73,7 +73,9 @@ def get_move_cost(coords, neighbor, pixel, goal):
     :param pixel:
     :return:
     """
-    cost = 1
+    dy = abs(coords[0] - neighbor[0])
+    cost = 1000 if dy != 0 else 1
+    cost += 500 if neighbor[1] - coords[1] == 0 else 0
     return cost
 
 
@@ -169,7 +171,7 @@ def find_path(row, image):
 
             # Only handle unvisited neighbours
             if neighbor not in visited:
-                new_cost = state.cost + get_move_cost(state.coords, neighbor, sub_image[neighbor[0], neighbor[1]], goal)
+                new_cost = state.cost + get_move_cost(state.coords, neighbor, goal)
                 priority = new_cost + compute_heuristic(neighbor, goal)
                 new_state = State(neighbor, state, new_cost, priority)
                 queue.put(new_state)

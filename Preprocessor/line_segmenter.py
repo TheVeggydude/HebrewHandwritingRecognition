@@ -57,7 +57,7 @@ if __name__ == '__main__':
     sys.setrecursionlimit(10 ** 6)
     print("Number of processors: ", mp.cpu_count())
 
-    for i in range(0, 3):
+    for i in range(1, 3):
 
         # Load and binarize image
         print(f"Working on image{i}")
@@ -70,7 +70,7 @@ if __name__ == '__main__':
         line_starts = find_line_starts(projection)
 
         # Generate segment lines per start position
-        segment_lines = [find_path(start, data) for start in line_starts]
+        segment_lines = [find_path(start, data) for start in line_starts[:3]]
 
         # Show projection
         plt.plot(projection)
@@ -92,5 +92,6 @@ if __name__ == '__main__':
         # data[line_starts] = np.zeros(data.shape[COLUMNS])
 
         out_segment_image = Image.fromarray(data).save(f"./results/test{i}_segmentlines.jpg")
+        exit(-1)
 
     print(f"Done!")
