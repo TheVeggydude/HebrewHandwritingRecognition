@@ -4,28 +4,21 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 
+from collections import namedtuple
 from scipy.signal import find_peaks
 
 
 ROWS = 0
 COLUMNS = 1
-
-
-class Point:
-    """
-    Class denoting a point in 2d space.
-    """
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+Point = namedtuple("Point", ["x", "y"])
 
 
 class Node:
     """
 
     """
-    def __init__(self, point, parent, f_score, g_score, h_score):
-        self.coords = point
+    def __init__(self, coords, parent, f_score, g_score, h_score):
+        self.coords = coords
         self.parent = parent
         self.f_score = f_score
         self.g_score = g_score
@@ -74,9 +67,9 @@ def get_neighbors(state, image):
 
 def a_star(row, image):
 
-    # TODO update open to dict and close to set to improve speed
+    # TODO update open to dict to improve speed
     open_list = []
-    close_list = []
+    visited = set()
 
     # Determine start and ending coordinates
     starting_coords = Point(row, 0)
@@ -95,7 +88,7 @@ def a_star(row, image):
         # Get the most optimal node from open list and add it to the closed list
         current = get_lowest_f_node(open_list)
         open_list.remove(current)
-        close_list.append(current)
+        visited.add((current.coords.x, current.coords.y))
 
         # If goal found, return current node
         if current.coords.x == goal_coords.x and current.coords.y == goal_coords.y:
@@ -104,12 +97,7 @@ def a_star(row, image):
         for neighbor, move in get_neighbors(current, image):
 
             # Skip if already visited
-            break_flag = False
-            for node in close_list:
-                if node.coords.x == neighbor.x and node.coords.y == neighbor.y:
-                    break_flag = True
-                    break
-            if break_flag:
+            if (neighbor.x, neighbor.y) in visited:
                 continue
 
             # Compute new scores
@@ -213,7 +201,7 @@ def find_line_starts(projection):
 
 if __name__ == '__main__':
 
-    for i in range(0, 3):
+    for i in range(2, 3):
         # Load and binarize image
         print(f"Working on test image {i}")
         img = cv2.imread(f"../data/test{i}.jpg", 0)
