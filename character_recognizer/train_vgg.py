@@ -1,5 +1,6 @@
 # set the matplotlib backend so figures can be saved in the background
 import matplotlib
+import cfg
 matplotlib.use("Agg")
 # import the necessary packages
 #from pyimagesearch.smallvggnet import SmallVGGNet
@@ -35,6 +36,7 @@ class SmallVGGNet:
 		# "channels last" and the channels dimension itself
 		model = Sequential()
 		inputShape = (height, width, depth)
+		activation = cfg.activation
 		chanDim = -1
 		# if we are using "channels first", update the input shape
 		# and channels dimension
@@ -45,17 +47,17 @@ class SmallVGGNet:
 # CONV => RELU => POOL layer set
 		model.add(Conv2D(32, (3, 3), padding="same",
 			input_shape=inputShape))
-		model.add(Activation("tanh"))
+		model.add(Activation(activation))
 		#model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 		#model.add(Dropout(0.25))
         
 # (CONV => RELU) * 2 => POOL layer set
 		model.add(Conv2D(64, (3, 3), padding="same"))
-		model.add(Activation("tanh"))
+		model.add(Activation(activation))
 		model.add(BatchNormalization(axis=chanDim))
 		model.add(Conv2D(64, (3, 3), padding="same"))
-		model.add(Activation("tanh"))
+		model.add(Activation(activation))
 		model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 		model.add(Dropout(0.25))
@@ -63,13 +65,13 @@ class SmallVGGNet:
 
 # (CONV => RELU) * 3 => POOL layer set
 		model.add(Conv2D(128, (3, 3), padding="same"))
-		model.add(Activation("tanh"))
+		model.add(Activation(activation))
 		model.add(BatchNormalization(axis=chanDim))
 		model.add(Conv2D(128, (3, 3), padding="same"))
-		model.add(Activation("tanh"))
+		model.add(Activation(activation))
 		model.add(BatchNormalization(axis=chanDim))
 		model.add(Conv2D(128, (3, 3), padding="same"))
-		model.add(Activation("tanh"))
+		model.add(Activation(activation))
 		model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
 		model.add(Dropout(0.25))
@@ -77,9 +79,10 @@ class SmallVGGNet:
 # first (and only) set of FC => RELU layers
 		model.add(Flatten())
 		model.add(Dense(512))
-		model.add(Activation("tanh"))
+		model.add(Activation(activation))
 		model.add(BatchNormalization())
 		model.add(Dropout(0.5))
+		
 		# softmax classifier
 		model.add(Dense(classes))
 		model.add(Activation("softmax"))
@@ -102,6 +105,7 @@ def Reformat_Image(ImageFilePath):
 
     background.paste(image, offset)
     return background
+
     # background.save('out.png')
 	# print("Image has been resized !")
 
@@ -132,17 +136,19 @@ for imagePath in imagePaths:
 	# data list
 
 	# Resizes images to 64x64 while keeping aspect ratio
-	# image = np.array(Reformat_Image(imagePath))
-	# image = image[:, :, ::-1].copy()
+	if cfg.aspect_ratio:		
+		image = np.array(Reformat_Image(imagePath))
+		image = image[:, :, ::-1].copy()
+	else:
+		image = cv2.imread(imagePath)
+		image = cv2.resize(image, (64, 64))
 
-	image = cv2.imread(imagePath)
-
-	image = cv2.resize(image, (64, 64))
 	data.append(image)
 	# extract the class label from the image path and update the
 	# labels list
 	label = imagePath.split(os.path.sep)[-2]
 	labels.append(label)
+
 # scale the raw pixel intensities to the range [0, 1]
 data = np.array(data, dtype="float") / 255.0
 labels = np.array(labels)
@@ -151,6 +157,7 @@ labels = np.array(labels)
 # the data for training and the remaining 25% for testing
 (trainX, testX, trainY, testY) = train_test_split(data,
 	labels, test_size=0.25, random_state=42)
+
 # convert the labels from integers to vectors (for 2-class, binary
 # classification you should use Keras' to_categorical function
 # instead as the scikit-learn's LabelBinarizer will not return a
@@ -170,13 +177,14 @@ model = SmallVGGNet.build(width=64, height=64, depth=3,
 # initialize our initial learning rate, # of epochs to train for,
 # and batch size
 INIT_LR = 0.01
-EPOCHS = 60
+EPOCHS = cfg.epochs
 BS = 32
 # initialize the model and optimizer (you'll want to use
 # binary_crossentropy for 2-class classification)
 print("[INFO] training network...")
 opt = SGD(lr=INIT_LR, decay=INIT_LR / EPOCHS)
-model.compile(loss="categorical_crossentropy", optimizer="rmsprop",
+optimizer = cfg.optimizer
+model.compile(loss="categorical_crossentropy", optimizer=optimizer,
 	metrics=["accuracy"])
 # train the network
 H = model.fit_generator(aug.flow(trainX, trainY, batch_size=BS),
@@ -199,7 +207,7 @@ plt.plot(N, H.history["loss"], label="train_loss")
 plt.plot(N, H.history["val_loss"], label="val_loss")
 plt.plot(N, H.history["accuracy"], label="train_acc")
 plt.plot(N, H.history["val_accuracy"], label="val_acc")
-plt.title("Training Loss and Accuracy (SmallVGGNet+RMSProp)")
+plt.title(f"Activation: {cfg.activation} | AR: {cfg.aspect_ratio} | Opt: {cfg.optimizer}")
 plt.xlabel("Epoch #")
 plt.ylabel("Loss/Accuracy")
 plt.legend()

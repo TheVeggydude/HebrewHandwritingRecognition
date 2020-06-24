@@ -1,0 +1,1 @@
+python3 train_vgg.py -d monkbrill-jpg/monkbrill2/ -l . -p . -m .

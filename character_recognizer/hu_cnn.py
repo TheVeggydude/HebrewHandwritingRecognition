@@ -26,11 +26,12 @@ import os
 import numpy as np
 
 # fit and evaluate a model
-def evaluate_model(trainX, trainy, testX, testy):
-    verbose, epochs, batch_size = 0, 10, 32
-    n_timesteps, n_features, n_outputs = trainX.shape[0], trainX.shape[1], trainy.shape[0]
+def evaluate_model(trainX, trainY, testX, testY):
+    verbose, epochs, batch_size = 0, 30, 32
+    n_timesteps, n_features, n_outputs = trainX.shape[0], trainX.shape[1], trainY.shape[0]
+    input_shape = (n_timesteps, n_features)
     model = Sequential()
-    model.add(Conv1D(filters=64, kernel_size=3, activation='relu', input_shape=(n_timesteps, n_features)))
+    model.add(Conv1D(filters=64, kernel_size=3, activation='relu', input_shape=input_shape))
     model.add(Conv1D(filters=64, kernel_size=3, activation='relu'))
     model.add(Dropout(0.5))
     model.add(MaxPooling1D(pool_size=2))
@@ -39,9 +40,11 @@ def evaluate_model(trainX, trainy, testX, testy):
     model.add(Dense(n_outputs, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     # fit network
-    model.fit(trainX, trainy, epochs=epochs, batch_size=batch_size, verbose=verbose)
+    print("FIT TRAINX:", trainX.shape)
+    print("FIT TRAINY:", trainY.shape)
+    model.fit(trainX, trainY, epochs=epochs, batch_size=batch_size, verbose=verbose)
     # evaluate model
-    _, accuracy = model.evaluate(testX, testy, batch_size=batch_size, verbose=0)
+    _, accuracy = model.evaluate(testX, testY, batch_size=batch_size, verbose=0)
     return accuracy
 
 # summarize scores
@@ -102,18 +105,16 @@ for imagePath in imagePaths:
 
 # Convert data to numpy arrays
 data = np.array(data, dtype="float")
-data = np.expand_dims(data, axis=2)
 labels = np.array(labels)
+
+print("labels shape:", labels.shape)
 print(type(data))
 print(data.shape)
 print(data.shape[0])
 print(data.shape[1])
 
-
 # Split data into train/test
-(trainX, testX, trainY, testY) = train_test_split(data,
-	labels, test_size=0.25, random_state=42)
-
+(trainX, testX, trainY, testY) = train_test_split(data, labels, test_size=0.25, random_state=42)
 
 lb = LabelBinarizer()
 trainY = lb.fit_transform(trainY)
