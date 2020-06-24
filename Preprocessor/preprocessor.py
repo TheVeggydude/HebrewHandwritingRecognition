@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
+import time
 
 from scipy.signal import find_peaks
 from Preprocessor.utils import count_transitions
@@ -68,8 +69,12 @@ if __name__ == '__main__':
         line_start_data = find_line_starts(projection)
 
         for index, start in enumerate(line_start_data):
+            t = time.time()
+            # do stuff
+
             print(f"Finding path for line at row {start} ({index+1}/{len(line_start_data)}).")
             path = find_path(start[0], start[1], img_arr)
+            print(f"Path found in {time.time() - t} seconds!")
 
             # TODO verify path integrity
             plt.plot(path[:, COLUMNS], path[:, ROWS])

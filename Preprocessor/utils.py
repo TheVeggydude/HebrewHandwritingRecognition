@@ -8,4 +8,4 @@ def count_transitions(row):
     :return: number of transitions in row.
     """
 
-    return len(np.argwhere(np.diff(row)).squeeze())
+    return len(np.argwhere(np.diff(row)))

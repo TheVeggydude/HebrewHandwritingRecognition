@@ -1,4 +1,3 @@
-import math
 import sys
 import numpy as np
 
@@ -34,7 +33,7 @@ def compute_heuristic(a, b):
     :param b: Point namedtuple for goal coordinates in form (x, y).
     :return: Euclidean distance x 2 from point a to point b.
     """
-    return float(math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2))
+    return max(abs(a.x - b.x), abs(a.y - b.y))
 
 
 def compute_cost(move):
@@ -81,6 +80,21 @@ def get_neighbors(state, image):
             continue
 
         yield neighbor, move
+
+
+def get_lowest_prio_state(open_list):
+    """
+    Finds and returns the node with the lowest f score in a list.
+    :param open_list: List of State objects to search through.
+    :return:
+    """
+    minimal = sys.maxsize
+    current = open_list[0]
+    for node in open_list:
+        if node.priority < minimal:
+            current = node
+            minimal = node.priority
+    return current
 
 
 def a_star(row, maze):
@@ -138,40 +152,28 @@ def a_star(row, maze):
                 open_list.append(new_elem)
 
 
-def get_lowest_prio_state(open_list):
-    """
-    Finds and returns the node with the lowest f score in a list.
-    :param open_list: List of State objects to search through.
-    :return:
-    """
-    min_f_score = sys.maxsize
-    current = open_list[0]
-    for node in open_list:
-        if node.priority < min_f_score:
-            current = node
-            min_f_score = node.priority
-    return current
-
-
-def extract_sub_image(image):
+def extract_sub_image(image, limits):
     """
     Creates view of the image NumPy array cropped of the useless whitespace on the left and right sides of the image.
     :param image: 2D NumPy array describing the image data.
+    :param limits: List containing two row limits to crop to.
     :return: Cropped view of the original 2D NumPy array.
     """
     max_width = np.shape(image)[COLUMNS] - 1
     relevant_columns = [0, max_width]
 
+    cropped_img = image[limits[0]: limits[1], :]
+
     # Find first column that shows a pixel.
-    for column in range(image.shape[COLUMNS]):
-        transitions = count_transitions(image[:, column])
+    for column in range(cropped_img.shape[COLUMNS]):
+        transitions = count_transitions(cropped_img[:, column])
         if transitions > 0:
             relevant_columns[0] = column
             break
 
     # Find last column that shows a pixel.
-    for column in range(image.shape[COLUMNS] - 1, 0, -1):
-        transitions = count_transitions(image[:, column])
+    for column in range(cropped_img.shape[COLUMNS] - 1, 0, -1):
+        transitions = count_transitions(cropped_img[:, column])
         if transitions > 0:
             relevant_columns[1] = column
             break
@@ -183,7 +185,7 @@ def extract_sub_image(image):
     right_margin = relevant_columns[1]
     right_margin = right_margin + WINDOW_BUFFER if right_margin + WINDOW_BUFFER < max_width else max_width
 
-    return left_margin, right_margin, image[:, left_margin: right_margin]
+    return left_margin, right_margin, limits[0], image[limits[0]:limits[1], left_margin: right_margin]
 
 
 def find_path(row, peaks, image):
@@ -191,23 +193,24 @@ def find_path(row, peaks, image):
     Finds a path between left most edge and the corresponding right edge of the image at a specific row height. Performs
     some optimizations on the image array to decrease computation times.
     :param row: Integer describing the row in the image array to search along.
+    :param peaks: List of form [top_row, bottom_row] in between which the path must be found.
     :param image: 2D NumPy array with the image data.
     :return: List of tuples describing the coordinates in the path.
     """
     max_width = np.shape(image)[COLUMNS] - 1
 
     # Find speed up variables
-    left_margin, right_margin, sub_image = extract_sub_image(image)
+    left_margin, right_margin, row_offset, sub_image = extract_sub_image(image, peaks)
 
     # Find path to end node
-    node = a_star(row, sub_image)
+    node = a_star(row-row_offset, sub_image)
 
     # Backtrack from ending node to initial node with parent `None`
     prepend_points = np.asarray([[row, column] for column in np.arange(left_margin)])
     append_points = np.asarray([[row, column] for column in np.arange(right_margin + 1, max_width)])
     points = []
     while node is not None:
-        points.append((node.coords.x, node.coords.y + left_margin))
+        points.append((node.coords.x + row_offset, node.coords.y + left_margin))
         node = node.parent
     points = np.asarray(points)[::-1]  # Flipped so starting node is at arr[0]
 
