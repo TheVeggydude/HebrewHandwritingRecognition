@@ -176,9 +176,10 @@ model = SmallVGGNet.build(width=64, height=64, depth=3,
 
 # initialize our initial learning rate, # of epochs to train for,
 # and batch size
-INIT_LR = 0.01
+INIT_LR = cfg.init_learning_rate
 EPOCHS = cfg.epochs
-BS = 32
+BS = cfg.batch_size
+
 # initialize the model and optimizer (you'll want to use
 # binary_crossentropy for 2-class classification)
 print("[INFO] training network...")
