@@ -9,6 +9,7 @@ from Preprocessor.utils import count_transitions
 ROWS = 0
 COLUMNS = 1
 WINDOW_BUFFER = 10
+MOVES = [[0, 1], [1, 1], [-1, 1], [1, 0], [-1, 0]]
 
 # Named tuple definitions
 Point = namedtuple("Point", ["x", "y"])
@@ -65,10 +66,9 @@ def get_neighbors(state, image):
     :param image: 2D NumPy array describing the image in either black (= 0) or white (= 255) pixels.
     :return: A list of pairs of form Point, move describing the new coordinates and the move that got there.
     """
-    moves = [[0, 1], [1, 1], [-1, 1], [1, 0], [-1, 0]]
 
     # Get a neighbor for each move allowed
-    for move in moves:
+    for move in MOVES:
         neighbor = Point(state.coords.x + move[0], state.coords.y + move[1])
 
         # Skip if out of bounds
@@ -207,7 +207,7 @@ def find_path(row, peaks, image):
 
     # Backtrack from ending node to initial node with parent `None`
     prepend_points = np.asarray([[row, column] for column in np.arange(left_margin)])
-    append_points = np.asarray([[row, column] for column in np.arange(right_margin + 1, max_width)])
+    append_points = np.asarray([[row, column] for column in np.arange(right_margin, max_width)])
     points = []
     while node is not None:
         points.append((node.coords.x + row_offset, node.coords.y + left_margin))
