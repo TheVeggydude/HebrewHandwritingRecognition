@@ -17,31 +17,35 @@ WINDOW_BUFFER = 10
 Point = namedtuple("Point", ["x", "y"])
 
 
-class Node:
+class State:
     """
-
+    A state encodes a single state in the search tree. By linking State objects through the parent parameter the path
+    can be recreated.
     """
-    def __init__(self, coords, parent, f_score, g_score, h_score):
+    def __init__(self, coords, parent, f_score, g_score):
         self.coords = coords
         self.parent = parent
-        self.f_score = f_score
-        self.g_score = g_score
-        self.h_score = h_score
-        self.visited = True
+        self.priority = f_score
+        self.cost = g_score
 
 
-def compute_h(start, goal):
-    return (start.x - goal.x) ** 2 + (start.y - goal.y) ** 2
+def compute_heuristic(a, b):
+    """
+    Computes the heuristic going from coordinates a to coordinates b.
+    :param a: Point namedtuple for start coordinates in form (x, y).
+    :param b: Point namedtuple for goal coordinates in form (x, y).
+    :return: Manhattan distance x 2 from point a to point b.
+    """
+    return (a.x - b.x) ** 2 + (a.y - b.y) ** 2
 
 
-def compute_g(direction):
-    return float(math.sqrt(direction[0] * direction[0] + direction[1] * direction[1]))
-
-
-def traversable(point, image, threshold=200):
-    if image[point.x][point.y] > threshold:
-        return True
-    return False
+def compute_cost(direction):
+    """
+    Computes the cost for moving in a specified direction, by taking the Euclidean distance between.
+    :param direction: Array of length 2 in the form [delta_x, delta_y].
+    :return: Floating point cost value for move in specified direction.
+    """
+    return float(math.sqrt(direction[0] ** 2 + direction[1] ** 2))
 
 
 def check_in_list(point, lst):
@@ -63,7 +67,7 @@ def get_neighbors(state, image):
             continue
 
         # Skip if black pixel
-        if not traversable(neighbor, image):
+        if image[neighbor.x, neighbor.y] == 0:
             continue
 
         yield neighbor, move
@@ -80,9 +84,9 @@ def a_star(row, image):
     goal_coords = Point(row, image.shape[1] - 1)
 
     # Create starting node
-    h_score = compute_h(starting_coords, goal_coords)
+    h_score = compute_heuristic(starting_coords, goal_coords)
     f_score = h_score
-    starting_node = Node(starting_coords, None, f_score, 0, h_score)
+    starting_node = State(starting_coords, None, f_score, 0)
 
     # Add to open list
     open_list.append(starting_node)
@@ -105,17 +109,17 @@ def a_star(row, image):
                 continue
 
             # Compute new scores
-            g = compute_g(move) + current.g_score
-            h = compute_h(neighbor, goal_coords)
+            g = compute_cost(move) + current.cost
+            h = compute_heuristic(neighbor, goal_coords)
             f = g + h
-            new_elem = Node(neighbor, current, f, g, h)
+            new_elem = State(neighbor, current, f, g)
 
             # Append neighbor to open list
             flag, elem = check_in_list(neighbor, open_list)
             if flag:
 
                 # If neighbor's f score is lower than the one in the open list
-                if f < elem.f_score:
+                if f < elem.priority:
                     open_list.remove(elem)
                     open_list.append(new_elem)
                 else:
@@ -133,9 +137,9 @@ def get_lowest_f_node(open_list):
     min_f_score = sys.maxsize
     current = open_list[0]
     for node in open_list:
-        if node.f_score < min_f_score:
+        if node.priority < min_f_score:
             current = node
-            min_f_score = node.f_score
+            min_f_score = node.priority
     return current
 
 
