@@ -27,6 +27,7 @@ from tensorflow.keras.layers import Activation
 from tensorflow.keras.layers import Flatten
 from tensorflow.keras.layers import Dropout
 from tensorflow.keras.layers import Dense
+from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras import backend as K
 
 class SmallVGGNet:
@@ -139,10 +140,12 @@ args = vars(ap.parse_args())
 print("[INFO] loading images...")
 data = []
 labels = []
+
 # grab the image paths and randomly shuffle them
 imagePaths = sorted(list(paths.list_images(args["dataset"])))
 random.seed(42)
 random.shuffle(imagePaths)
+
 # loop over the input images
 for imagePath in imagePaths:
 	# load the image, resize it to 64x64 pixels (the required input
@@ -183,6 +186,7 @@ testY = lb.transform(testY)
 # construct the image generator for data augmentation
 aug = ImageDataGenerator(rotation_range=15, width_shift_range=0.1,
 	height_shift_range=0.1, shear_range=0.2, zoom_range=0.2, fill_mode="nearest")
+
 # initialize our VGG-like Convolutional Neural Network
 model = SmallVGGNet.build(width=64, height=64, depth=3,
 	classes=len(lb.classes_))
@@ -199,12 +203,17 @@ BS = cfg.batch_size
 print("[INFO] training network...")
 opt = SGD(lr=INIT_LR, decay=INIT_LR / EPOCHS)
 optimizer = cfg.optimizer
+early_stopping = EarlyStopping(monitor=cfg.monitor, patience=3)
+callbacks = None
+if cfg.early_stopping:
+	callbacks = early_stopping
 model.compile(loss="categorical_crossentropy", optimizer=optimizer,
 	metrics=["accuracy"])
+
 # train the network
 H = model.fit_generator(aug.flow(trainX, trainY, batch_size=BS),
 	validation_data=(testX, testY), steps_per_epoch=len(trainX) // BS,
-	epochs=EPOCHS)
+	epochs=EPOCHS, callbacks=early_stopping)
 #H = model.fit(trainX, trainY, validation_data=(testX, testY),
 #	epochs=EPOCHS, batch_size=BS)
 
@@ -214,6 +223,7 @@ print("[INFO] evaluating network...")
 predictions = model.predict(testX, batch_size=32)
 print(classification_report(testY.argmax(axis=1),
 	predictions.argmax(axis=1), target_names=lb.classes_))
+	
 # plot the training loss and accuracy
 N = np.arange(0, EPOCHS)
 plt.style.use("ggplot")
@@ -227,8 +237,10 @@ plt.xlabel("Epoch #")
 plt.ylabel("Loss/Accuracy")
 plt.legend()
 plt.savefig(args["plot"])
+
 # save the model and label binarizer to disk
 print("[INFO] serializing network and label binarizer...")
+
 #model.save(args["model"])
 f = open(args["label_bin"], "wb")
 f.write(pickle.dumps(lb))
