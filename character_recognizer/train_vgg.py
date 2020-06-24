@@ -203,7 +203,7 @@ BS = cfg.batch_size
 print("[INFO] training network...")
 opt = SGD(lr=INIT_LR, decay=INIT_LR / EPOCHS)
 optimizer = cfg.optimizer
-early_stopping = EarlyStopping(monitor=cfg.monitor, patience=3)
+early_stopping = EarlyStopping(monitor=cfg.monitor, patience=cfg.patience)
 callbacks = None
 if cfg.early_stopping:
 	callbacks = early_stopping
@@ -214,16 +214,16 @@ model.compile(loss="categorical_crossentropy", optimizer=optimizer,
 H = model.fit_generator(aug.flow(trainX, trainY, batch_size=BS),
 	validation_data=(testX, testY), steps_per_epoch=len(trainX) // BS,
 	epochs=EPOCHS, callbacks=early_stopping)
+	
 #H = model.fit(trainX, trainY, validation_data=(testX, testY),
 #	epochs=EPOCHS, batch_size=BS)
-
 
 # evaluate the network
 print("[INFO] evaluating network...")
 predictions = model.predict(testX, batch_size=32)
 print(classification_report(testY.argmax(axis=1),
 	predictions.argmax(axis=1), target_names=lb.classes_))
-	
+
 # plot the training loss and accuracy
 N = np.arange(0, EPOCHS)
 plt.style.use("ggplot")
