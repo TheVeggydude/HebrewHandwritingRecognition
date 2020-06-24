@@ -27,17 +27,20 @@ from tensorflow.keras.layers import Activation
 from tensorflow.keras.layers import Flatten
 from tensorflow.keras.layers import Dropout
 from tensorflow.keras.layers import Dense
+from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras import backend as K
 
 class SmallVGGNet:
 	@staticmethod
 	def build(width, height, depth, classes):
+
 		# initialize the model along with the input shape to be
 		# "channels last" and the channels dimension itself
 		model = Sequential()
 		inputShape = (height, width, depth)
 		activation = cfg.activation
 		chanDim = -1
+
 		# if we are using "channels first", update the input shape
 		# and channels dimension
 		if K.image_data_format() == "channels_first":
@@ -48,44 +51,56 @@ class SmallVGGNet:
 		model.add(Conv2D(32, (3, 3), padding="same",
 			input_shape=inputShape))
 		model.add(Activation(activation))
-		#model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
-		#model.add(Dropout(0.25))
+		if cfg.dropout:
+			model.add(Dropout(cfg.drop_hidden))
         
 # (CONV => RELU) * 2 => POOL layer set
 		model.add(Conv2D(64, (3, 3), padding="same"))
 		model.add(Activation(activation))
-		model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(Conv2D(64, (3, 3), padding="same"))
 		model.add(Activation(activation))
-		model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
-		model.add(Dropout(0.25))
+		if cfg.dropout:
+			model.add(Dropout(cfg.drop_hidden))
 
 
 # (CONV => RELU) * 3 => POOL layer set
 		model.add(Conv2D(128, (3, 3), padding="same"))
 		model.add(Activation(activation))
-		model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(Conv2D(128, (3, 3), padding="same"))
 		model.add(Activation(activation))
-		model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(Conv2D(128, (3, 3), padding="same"))
 		model.add(Activation(activation))
-		model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
-		model.add(Dropout(0.25))
+		if cfg.dropout:
+			model.add(Dropout(cfg.drop_hidden))
 
 # first (and only) set of FC => RELU layers
 		model.add(Flatten())
 		model.add(Dense(512))
 		model.add(Activation(activation))
-		model.add(BatchNormalization())
-		model.add(Dropout(0.5))
+		if cfg.batch_norm:
+			model.add(BatchNormalization())
+		if cfg.dropout:
+			model.add(Dropout(cfg.drop_output))
 		
 		# softmax classifier
 		model.add(Dense(classes))
 		model.add(Activation("softmax"))
+
 		# return the constructed network architecture
 		return model
 
@@ -125,10 +140,12 @@ args = vars(ap.parse_args())
 print("[INFO] loading images...")
 data = []
 labels = []
+
 # grab the image paths and randomly shuffle them
 imagePaths = sorted(list(paths.list_images(args["dataset"])))
 random.seed(42)
 random.shuffle(imagePaths)
+
 # loop over the input images
 for imagePath in imagePaths:
 	# load the image, resize it to 64x64 pixels (the required input
@@ -136,7 +153,7 @@ for imagePath in imagePaths:
 	# data list
 
 	# Resizes images to 64x64 while keeping aspect ratio
-	if cfg.aspect_ratio:		
+	if cfg.maintain_aspect_ratio:		
 		image = np.array(Reformat_Image(imagePath))
 		image = image[:, :, ::-1].copy()
 	else:
@@ -169,6 +186,7 @@ testY = lb.transform(testY)
 # construct the image generator for data augmentation
 aug = ImageDataGenerator(rotation_range=15, width_shift_range=0.1,
 	height_shift_range=0.1, shear_range=0.2, zoom_range=0.2, fill_mode="nearest")
+
 # initialize our VGG-like Convolutional Neural Network
 model = SmallVGGNet.build(width=64, height=64, depth=3,
 	classes=len(lb.classes_))
@@ -176,29 +194,36 @@ model = SmallVGGNet.build(width=64, height=64, depth=3,
 
 # initialize our initial learning rate, # of epochs to train for,
 # and batch size
-INIT_LR = 0.01
+INIT_LR = cfg.init_learning_rate
 EPOCHS = cfg.epochs
-BS = 32
+BS = cfg.batch_size
+
 # initialize the model and optimizer (you'll want to use
 # binary_crossentropy for 2-class classification)
 print("[INFO] training network...")
 opt = SGD(lr=INIT_LR, decay=INIT_LR / EPOCHS)
 optimizer = cfg.optimizer
+early_stopping = EarlyStopping(monitor=cfg.monitor, patience=cfg.patience)
+callbacks = None
+if cfg.early_stopping:
+	callbacks = early_stopping
 model.compile(loss="categorical_crossentropy", optimizer=optimizer,
 	metrics=["accuracy"])
+
 # train the network
 H = model.fit_generator(aug.flow(trainX, trainY, batch_size=BS),
 	validation_data=(testX, testY), steps_per_epoch=len(trainX) // BS,
-	epochs=EPOCHS)
+	epochs=EPOCHS, callbacks=early_stopping)
+	
 #H = model.fit(trainX, trainY, validation_data=(testX, testY),
 #	epochs=EPOCHS, batch_size=BS)
-
 
 # evaluate the network
 print("[INFO] evaluating network...")
 predictions = model.predict(testX, batch_size=32)
 print(classification_report(testY.argmax(axis=1),
 	predictions.argmax(axis=1), target_names=lb.classes_))
+
 # plot the training loss and accuracy
 N = np.arange(0, EPOCHS)
 plt.style.use("ggplot")
@@ -207,13 +232,15 @@ plt.plot(N, H.history["loss"], label="train_loss")
 plt.plot(N, H.history["val_loss"], label="val_loss")
 plt.plot(N, H.history["accuracy"], label="train_acc")
 plt.plot(N, H.history["val_accuracy"], label="val_acc")
-plt.title(f"Activation: {cfg.activation} | AR: {cfg.aspect_ratio} | Opt: {cfg.optimizer}")
+plt.title(f"Activation: {cfg.activation} | AR: {cfg.maintain_aspect_ratio} | Opt: {cfg.optimizer}")
 plt.xlabel("Epoch #")
 plt.ylabel("Loss/Accuracy")
 plt.legend()
 plt.savefig(args["plot"])
+
 # save the model and label binarizer to disk
 print("[INFO] serializing network and label binarizer...")
+
 #model.save(args["model"])
 f = open(args["label_bin"], "wb")
 f.write(pickle.dumps(lb))
