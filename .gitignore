@@ -132,3 +132,7 @@ dmypy.json
 # Editor stuff
 .idea
 /data/
+*.jpg
+*.jpeg
+*.png
+*.gif

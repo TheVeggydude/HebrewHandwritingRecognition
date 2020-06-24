@@ -32,12 +32,14 @@ from tensorflow.keras import backend as K
 class SmallVGGNet:
 	@staticmethod
 	def build(width, height, depth, classes):
+
 		# initialize the model along with the input shape to be
 		# "channels last" and the channels dimension itself
 		model = Sequential()
 		inputShape = (height, width, depth)
 		activation = cfg.activation
 		chanDim = -1
+
 		# if we are using "channels first", update the input shape
 		# and channels dimension
 		if K.image_data_format() == "channels_first":
@@ -48,44 +50,56 @@ class SmallVGGNet:
 		model.add(Conv2D(32, (3, 3), padding="same",
 			input_shape=inputShape))
 		model.add(Activation(activation))
-		#model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
-		#model.add(Dropout(0.25))
+		if cfg.dropout:
+			model.add(Dropout(cfg.drop_hidden))
         
 # (CONV => RELU) * 2 => POOL layer set
 		model.add(Conv2D(64, (3, 3), padding="same"))
 		model.add(Activation(activation))
-		model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(Conv2D(64, (3, 3), padding="same"))
 		model.add(Activation(activation))
-		model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
-		model.add(Dropout(0.25))
+		if cfg.dropout:
+			model.add(Dropout(cfg.drop_hidden))
 
 
 # (CONV => RELU) * 3 => POOL layer set
 		model.add(Conv2D(128, (3, 3), padding="same"))
 		model.add(Activation(activation))
-		model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(Conv2D(128, (3, 3), padding="same"))
 		model.add(Activation(activation))
-		model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(Conv2D(128, (3, 3), padding="same"))
 		model.add(Activation(activation))
-		model.add(BatchNormalization(axis=chanDim))
+		if cfg.batch_norm:
+			model.add(BatchNormalization(axis=chanDim))
 		model.add(MaxPooling2D(pool_size=(2, 2)))
-		model.add(Dropout(0.25))
+		if cfg.dropout:
+			model.add(Dropout(cfg.drop_hidden))
 
 # first (and only) set of FC => RELU layers
 		model.add(Flatten())
 		model.add(Dense(512))
 		model.add(Activation(activation))
-		model.add(BatchNormalization())
-		model.add(Dropout(0.5))
+		if cfg.batch_norm:
+			model.add(BatchNormalization())
+		if cfg.dropout:
+			model.add(Dropout(cfg.drop_output))
 		
 		# softmax classifier
 		model.add(Dense(classes))
 		model.add(Activation("softmax"))
+
 		# return the constructed network architecture
 		return model
 
@@ -136,7 +150,7 @@ for imagePath in imagePaths:
 	# data list
 
 	# Resizes images to 64x64 while keeping aspect ratio
-	if cfg.aspect_ratio:		
+	if cfg.maintain_aspect_ratio:		
 		image = np.array(Reformat_Image(imagePath))
 		image = image[:, :, ::-1].copy()
 	else:
@@ -208,7 +222,7 @@ plt.plot(N, H.history["loss"], label="train_loss")
 plt.plot(N, H.history["val_loss"], label="val_loss")
 plt.plot(N, H.history["accuracy"], label="train_acc")
 plt.plot(N, H.history["val_accuracy"], label="val_acc")
-plt.title(f"Activation: {cfg.activation} | AR: {cfg.aspect_ratio} | Opt: {cfg.optimizer}")
+plt.title(f"Activation: {cfg.activation} | AR: {cfg.maintain_aspect_ratio} | Opt: {cfg.optimizer}")
 plt.xlabel("Epoch #")
 plt.ylabel("Loss/Accuracy")
 plt.legend()
