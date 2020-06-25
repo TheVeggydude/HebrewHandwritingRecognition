@@ -129,6 +129,8 @@ class CNN_character:
 
 		# return the constructed network architecture
 		return model
+
+#Parse the arguments 
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--dataset", required=True,
 	help="path to input dataset of images")
@@ -138,11 +140,10 @@ ap.add_argument("-m2", "--model2", required=True,
 	help="path to output trained model2")
 ap.add_argument("-p2", "--plot2", required=True,
 	help="path to output accuracy/loss plot")
-#ap.add_argument("-l", "--label-bin", required=True,
-#	help="path to output label binarizer")
-
 ap.add_argument("-p", "--plot", required=True,
 	help="path to output accuracy/loss plot")
+ap.add_argument("-l", "--label-bin", required=True,
+	help="path to label binarizer")
 args = vars(ap.parse_args())
 
 print("[INFO] loading images...")
@@ -150,8 +151,6 @@ data = []
 labels = []
 # grab the image paths and randomly shuffle them
 imagePaths = sorted(list(paths.list_images(args["dataset"])))
-#print(imagePaths)
-random.seed(42)
 random.shuffle(imagePaths)
 # loop over the input images
 for imagePath in imagePaths:
@@ -183,27 +182,23 @@ lb = LabelBinarizer()
 trainY = lb.fit_transform(trainY)
 testY = lb.transform(testY)
 
+#Train Sub level network
 modelSubLvl = CNN_sub_region.build(width=64, height=64, depth=3,
 	classes=len(lb.classes_))
 
+#Train character level network
 modelCharLvl = CNN_character.build(width=64, height=64, depth=3,
 	classes=len(lb.classes_))
 
-
+#Parameters for training
 INIT_LR = 0.01
 EPOCHS = 50
 BS = 32
 
 
-print("[INFO] training network...")
-
-opt = SGD(lr=INIT_LR, decay=INIT_LR / EPOCHS)
+print("[INFO] training subLvL network...")
 modelSubLvl.compile(loss="categorical_crossentropy", optimizer="nadam",
 	metrics=["accuracy"])
-# train the network
-#H = model.fit_generator(aug.flow(trainX, trainY, batch_size=BS),
-#	validation_data=(testX, testY), steps_per_epoch=len(trainX) // BS,
-#	epochs=EPOCHS)
 H = modelSubLvl.fit(trainX, trainY, validation_data=(testX, testY),
 	epochs=EPOCHS, batch_size=BS)
 
@@ -234,13 +229,10 @@ modelSubLvl.save(args["model"])
 
 
 
-
+# train character level network
 modelCharLvl.compile(loss="categorical_crossentropy", optimizer="nadam",
 	metrics=["accuracy"])
 # train the network
-#H = model.fit_generator(aug.flow(trainX, trainY, batch_size=BS),
-#	validation_data=(testX, testY), steps_per_epoch=len(trainX) // BS,
-#	epochs=EPOCHS)
 H = modelCharLvl.fit(trainX, trainY, validation_data=(testX, testY),
 	epochs=EPOCHS, batch_size=BS)
 
@@ -265,6 +257,13 @@ plt.savefig(args["plot2"])
 # save the model and label binarizer to disk
 print("[INFO] serializing network and label binarizer...")
 modelCharLvl.save(args["model2"])
-#f = open(args["label_bin"], "wb")
-#f.write(pickle.dumps(lb))
+
+f = open(args["label_bin"], "wb")
+f.write(pickle.dumps(lb))
 #f.close()
+
+
+
+'''
+-d characters_for_style_classification/ -m Models/model3.h5 -m2 Models/model4.h5 -p Plots/plot3 -p2 Plots/plot4 - l mlb.pickle
+'''
