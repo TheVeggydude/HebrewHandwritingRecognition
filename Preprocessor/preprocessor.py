@@ -42,7 +42,7 @@ def find_line_starts(projection):
     return start_data
 
 
-def crop_segment(upper, lower, img_data, index=0):
+def crop_segment(upper, lower, img_data):
     """
 
     :param upper:
@@ -66,14 +66,10 @@ def crop_segment(upper, lower, img_data, index=0):
         for bound in lower:
             cropped[bound[ROWS]-upper_bound:, bound[COLUMNS]] = 255  # set everything below boundary to white
 
-    plt.imshow(cropped, 'gray')
-    plt.title(f"Segment {index}")
-    plt.show()
-
     return cropped
 
 
-def segment(img):
+def segment(img, debug=False):
     # Load and binarize image
     img_binarized = binarize_image(img)
 
@@ -92,27 +88,33 @@ def segment(img):
         segmentation_lines[index] = find_path(start[0], start[1], img_data)
         print(f"Path found in {time.time() - t} seconds!")
 
-        plt.plot(segmentation_lines[index][:, COLUMNS], segmentation_lines[index][:, ROWS])
+        if debug:
+            plt.plot(segmentation_lines[index][:, COLUMNS], segmentation_lines[index][:, ROWS])
 
     # Plot the segmentation
-    plt.imshow(img_data, 'gray')
-    plt.title(f"Image {i} segmentation")
-    plt.show()
+    if debug:
+        plt.imshow(img_data, 'gray')
+        plt.title(f"Image {i} segmentation")
+        plt.show()
 
     # Actually split the image into segments
+    segments = []
     upper = None
     for index, lower in enumerate(segmentation_lines):
-        crop_segment(upper, lower, img_data, index)
+        segments.append(crop_segment(upper, lower, img_data))
         upper = lower
 
         if index == len(segmentation_lines) - 1:
-            print("final one")
-            crop_segment(upper, None, img_data, index+1)
+            segments.append(crop_segment(upper, None, img_data))
+
+    return segments
 
 
 if __name__ == '__main__':
 
-    for i in range(2, 3):
+    for i in range(0, 1):
         print(f"Working on test image {i}")
         img = cv2.imread(f"../data/test{i}.jpg", 0)
-        segment(img)
+
+        # Get image sentences
+        sentences = segment(img)
