@@ -157,14 +157,14 @@ def segment_characters(image, debug=False):
         peaks, properties = find_peaks(ratio_projection, prominence=1, distance=15)
         line_start_rows = [start[0] for start in line_starts]
 
-        # Plot the projection
-        plt.plot(ratio_projection, 'red')
-        plt.plot(peaks, ratio_projection[peaks], "x")
-        plt.plot(line_start_rows, ratio_projection[line_start_rows], "o")
-
-        plt.title("Projections")
-        plt.legend(['Ink/Transitions', 'peaks'])
-        plt.show()
+        # # Plot the projection
+        # plt.plot(ratio_projection, 'red')
+        # plt.plot(peaks, ratio_projection[peaks], "x")
+        # plt.plot(line_start_rows, ratio_projection[line_start_rows], "o")
+        #
+        # plt.title("Projections")
+        # plt.legend(['Ink/Transitions', 'peaks'])
+        # plt.show()
 
         # Plot the segmentation lines
         for line in segmentation_lines:
@@ -177,7 +177,7 @@ def segment_characters(image, debug=False):
 
 if __name__ == '__main__':
 
-    for i in range(0, 1):
+    for i in range(0, 3):
         print(f"Working on test image {i}")
         img = cv2.imread(f"../data/test{i}.jpg", 0)
 
@@ -191,4 +191,4 @@ if __name__ == '__main__':
             _, _, _, sentence = extract_sub_image(sentence)
             _, _, _, sentence = extract_sub_image(np.transpose(sentence))
 
-            segment_characters(sentence, debug=False)
+            segment_characters(sentence)
