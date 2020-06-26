@@ -97,7 +97,12 @@ def get_lowest_prio_state(open_list):
     return current
 
 
-def a_star(row, maze):
+def print_prio_list(open_list):
+    for elem in open_list:
+        print(elem.coords)
+
+
+def a_star(row, maze, debug=False):
 
     # TODO replace open_list with 2d array of states in order to remove costly search and remove operations.
     open_list = []
@@ -116,6 +121,10 @@ def a_star(row, maze):
     open_list.append(starting_node)
 
     while True:
+
+        # No path found, so
+        if not open_list:
+            return None
 
         # Get the most optimal node from open list and add it to the closed list
         current = get_lowest_prio_state(open_list)
@@ -152,7 +161,7 @@ def a_star(row, maze):
                 open_list.append(new_elem)
 
 
-def extract_sub_image(image, limits):
+def extract_sub_image(image, limits=(0, -1)):
     """
     Creates view of the image NumPy array cropped of the useless whitespace on the left and right sides of the image.
     :param image: 2D NumPy array describing the image data.
@@ -188,7 +197,7 @@ def extract_sub_image(image, limits):
     return left_margin, right_margin, limits[0], image[limits[0]:limits[1], left_margin: right_margin]
 
 
-def find_path(row, peaks, image):
+def find_path(row, peaks, image, debug=False):
     """
     Finds a path between left most edge and the corresponding right edge of the image at a specific row height. Performs
     some optimizations on the image array to decrease computation times.
@@ -203,15 +212,31 @@ def find_path(row, peaks, image):
     left_margin, right_margin, row_offset, sub_image = extract_sub_image(image, peaks)
 
     # Find path to end node
-    node = a_star(row-row_offset, sub_image)
+    node = a_star(row-row_offset, sub_image, debug)
+
+    # In case of no path found, return none.
+    if not node:
+        return None
 
     # Backtrack from ending node to initial node with parent `None`
     prepend_points = np.asarray([[row, column] for column in np.arange(left_margin)])
-    append_points = np.asarray([[row, column] for column in np.arange(right_margin, max_width)])
+    append_points = np.asarray([[row, column] for column in np.arange(right_margin, max_width+1)])
+
     points = []
     while node is not None:
         points.append((node.coords.x + row_offset, node.coords.y + left_margin))
         node = node.parent
     points = np.asarray(points)[::-1]  # Flipped so starting node is at arr[0]
 
-    return np.concatenate((prepend_points, points, append_points))
+    # Validate used point lists
+    used_lists = []
+    if prepend_points != []:
+        used_lists.append(prepend_points)
+
+    if points != []:
+        used_lists.append(points)
+
+    if append_points != []:
+        used_lists.append(append_points)
+
+    return np.concatenate(tuple(used_lists))

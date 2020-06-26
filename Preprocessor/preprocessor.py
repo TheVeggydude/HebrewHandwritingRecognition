@@ -4,8 +4,8 @@ import numpy as np
 import time
 
 from scipy.signal import find_peaks
-from Preprocessor.utils import count_transitions
-from Preprocessor.path_finding import find_path, MOVES
+from Preprocessor.utils import count_transitions, count_ink
+from Preprocessor.path_finding import find_path, extract_sub_image
 
 
 # Constants
@@ -25,13 +25,13 @@ def binarize_image(image):
     return result
 
 
-def find_line_starts(projection):
+def find_line_starts(projection, distance):
     """
     Finds the start of line segmentation by taking the center minimal value between peaks.
     :param projection: list of projection values. Each element corresponds to a row in the original data.
     :return: list of tuples, consisting of row indices and a set of peaks the row is in between.
     """
-    peaks, properties = find_peaks(projection, prominence=1, distance=100)
+    peaks, properties = find_peaks(projection, prominence=1, distance=distance)
 
     start_data = []
     for index, peak in enumerate(peaks[:-1]):
@@ -42,7 +42,7 @@ def find_line_starts(projection):
     return start_data
 
 
-def crop_segment(upper, lower, img_data):
+def cut_out_segment(upper, lower, img_data):
     """
 
     :param upper:
@@ -69,15 +69,21 @@ def crop_segment(upper, lower, img_data):
     return cropped
 
 
-def segment(img, debug=False):
+def segment_sentences(image, debug=False):
+    """
+
+    :param image:
+    :param debug:
+    :return:
+    """
     # Load and binarize image
-    img_binarized = binarize_image(img)
+    image = binarize_image(image)
 
     # Compute projection & find line starts.
-    img_data = np.array(img_binarized)
-    print(f"Image shape: {img_data.shape}")
-    projection = np.apply_along_axis(count_transitions, COLUMNS, img_data)
-    line_start_data = find_line_starts(projection)
+    image = np.array(image)
+    print(f"Image shape: {image.shape}")
+    projection = np.apply_along_axis(count_transitions, COLUMNS, image)
+    line_start_data = find_line_starts(projection, 100)
 
     # Find all the segments
     segmentation_lines = [None for elem in line_start_data]  # to store the segmentation lines
@@ -85,7 +91,7 @@ def segment(img, debug=False):
         t = time.time()
         print(f"Finding path for line at row {start} ({index + 1}/{len(line_start_data)}).")
 
-        segmentation_lines[index] = find_path(start[0], start[1], img_data)
+        segmentation_lines[index] = find_path(start[0], start[1], image, debug)
         print(f"Path found in {time.time() - t} seconds!")
 
         if debug:
@@ -93,21 +99,80 @@ def segment(img, debug=False):
 
     # Plot the segmentation
     if debug:
-        plt.imshow(img_data, 'gray')
-        plt.title(f"Image {i} segmentation")
+        plt.imshow(image, 'gray')
+        plt.title(f"Image segmentation")
         plt.show()
 
     # Actually split the image into segments
     segments = []
     upper = None
     for index, lower in enumerate(segmentation_lines):
-        segments.append(crop_segment(upper, lower, img_data))
+        segments.append(cut_out_segment(upper, lower, image))
         upper = lower
 
         if index == len(segmentation_lines) - 1:
-            segments.append(crop_segment(upper, None, img_data))
+            segments.append(cut_out_segment(upper, None, image))
 
     return segments
+
+
+def valid_path(path):
+    """
+    Validates a path.
+    :param path:
+    :return:
+    """
+    return path is not None
+
+
+def segment_characters(image, debug=False):
+    """
+
+    :param image:
+    :param debug:
+    :return:
+    """
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        ink_projection = np.apply_along_axis(count_ink, COLUMNS, image)
+        transition_projection = np.apply_along_axis(count_transitions, COLUMNS, image)
+        ratio_projection = np.nan_to_num(np.divide(ink_projection, transition_projection))
+
+    line_starts = find_line_starts(ratio_projection, 15)
+
+    # Find all the segments
+    segmentation_lines = []  # to store the segmentation lines
+    for index, start in enumerate(line_starts):
+        t = time.time()
+        print(f"Finding path for line at row {start} ({index + 1}/{len(line_starts)}).")
+
+        path = find_path(start[0], start[1], image, debug)
+        if valid_path(path):
+            segmentation_lines.append(path)
+            print(f"Path found in {time.time() - t} seconds!")
+        else:
+            print("Invalid path found!")
+
+    if debug:
+        peaks, properties = find_peaks(ratio_projection, prominence=1, distance=15)
+        line_start_rows = [start[0] for start in line_starts]
+
+        # Plot the projection
+        plt.plot(ratio_projection, 'red')
+        plt.plot(peaks, ratio_projection[peaks], "x")
+        plt.plot(line_start_rows, ratio_projection[line_start_rows], "o")
+
+        plt.title("Projections")
+        plt.legend(['Ink/Transitions', 'peaks'])
+        plt.show()
+
+        # Plot the segmentation lines
+        for line in segmentation_lines:
+            plt.plot(line[:, COLUMNS], line[:, ROWS])
+
+        plt.imshow(image, 'gray')
+        plt.title(f"Image segmentation")
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -117,4 +182,13 @@ if __name__ == '__main__':
         img = cv2.imread(f"../data/test{i}.jpg", 0)
 
         # Get image sentences
-        sentences = segment(img)
+        sentences = segment_sentences(img)
+
+        # Get the characters per sentence
+        for sentence in sentences:
+
+            # Crop sentence image to relevant area
+            _, _, _, sentence = extract_sub_image(sentence)
+            _, _, _, sentence = extract_sub_image(np.transpose(sentence))
+
+            segment_characters(sentence, debug=False)
