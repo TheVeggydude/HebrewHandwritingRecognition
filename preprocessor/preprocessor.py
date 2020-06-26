@@ -4,8 +4,8 @@ import numpy as np
 import time
 
 from scipy.signal import find_peaks
-from Preprocessor.utils import count_transitions, count_ink
-from Preprocessor.path_finding import find_path, extract_sub_image
+from preprocessor.utils import count_transitions, count_ink
+from preprocessor.path_finding import find_path, extract_sub_image
 
 
 # Constants
@@ -153,6 +153,16 @@ def segment_characters(image, debug=False):
         else:
             print("Invalid path found!")
 
+    # Actually split the image into segments
+    segments = []
+    upper = None
+    for index, lower in enumerate(segmentation_lines):
+        segments.append(cut_out_segment(upper, lower, image))
+        upper = lower
+
+        if index == len(segmentation_lines) - 1:
+            segments.append(cut_out_segment(upper, None, image))
+
     if debug:
         peaks, properties = find_peaks(ratio_projection, prominence=1, distance=15)
         line_start_rows = [start[0] for start in line_starts]
@@ -174,10 +184,12 @@ def segment_characters(image, debug=False):
         plt.title(f"Image segmentation")
         plt.show()
 
+    return segments
+
 
 if __name__ == '__main__':
 
-    for i in range(0, 3):
+    for i in range(0, 1):
         print(f"Working on test image {i}")
         img = cv2.imread(f"../data/test{i}.jpg", 0)
 
@@ -185,10 +197,19 @@ if __name__ == '__main__':
         sentences = segment_sentences(img)
 
         # Get the characters per sentence
+        characters = None
         for sentence in sentences:
 
             # Crop sentence image to relevant area
             _, _, _, sentence = extract_sub_image(sentence)
             _, _, _, sentence = extract_sub_image(np.transpose(sentence))
 
-            segment_characters(sentence)
+            # Find the characters
+            new_chars = segment_characters(sentence)
+            if not characters:
+                characters = new_chars
+            else:
+                characters = characters + new_chars
+
+        for index, character in enumerate(characters):
+            cv2.imwrite(f"results/characters/test{i}_character_{index}.jpg", character)
