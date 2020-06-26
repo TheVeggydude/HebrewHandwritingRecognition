@@ -131,3 +131,4 @@ dmypy.json
 # Editor stuff
 .idea
 /data/
+/preprocessor/results/characters/
