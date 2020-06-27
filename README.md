@@ -2,6 +2,9 @@
 This repository will contain code to preprocess, recognize characters and classify styles Hebrew texts like the Dead Sea
 Scrolls. The code is free to use, however, the data will not be provided as it is part of a private collection.
 
+## Run instructions
+1. Ensure that the latest pip3 version is installed.
+
 ## Modules
 ### Preprocessor
 The preprocessor takes binarized images of the source data and turns them into individual characters. This is done 
