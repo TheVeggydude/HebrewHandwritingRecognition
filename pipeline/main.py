@@ -1,8 +1,10 @@
 import argparse
+import shutil
 import random
 import cv2
 import os
 import numpy as np
+
 
 from statistics import mode
 from imutils import paths
@@ -90,7 +92,6 @@ def predict_chars():
     # initialize the data and labels
     print("[INFO] loading images...")
     data = []
-    labels = []
 
     # grab the image paths and randomly shuffle them
     imagePaths = sorted(list(paths.list_images(args["dataset"])))
@@ -117,11 +118,6 @@ def predict_chars():
                 character = cv2.resize(character, (64, 64))
                 line_characters.append(character)
 
-            print(f"Line characters: {line_characters}")
-            print(f"Length of list of characters: {len(line_characters)}")
-            print(f"Character shape: {line_characters[0].shape}")
-            print(f"Type of character: {type(line_characters[0])}")
-            
             # (NUM_CHARS, X, Y, CHANNEL)
             data = np.array(line_characters)
             data = np.array(data, dtype="float") / 255.0
@@ -134,9 +130,6 @@ def predict_chars():
             # Convert classes to hebrew characters
             y_new = convert_classes_to_hebrew(y_new)
 
-            # Print classes of characters
-            print(f"Classes of characters: {y_new}")
-
             # Write classes to file
             save_results_characters(y_new, image_number)
 
@@ -144,15 +137,16 @@ def predict_chars():
             style = np.argmax(style_model.predict(data), axis = -1)
             style = np.ndarray.tolist(style)
             styles = styles + style
-            print(f"STYLES = {styles}")
-            print(f"TYPE STYLE = {type(styles)}")
             
         # Save style of image
         save_result_style(styles, image_number)
     pass
 
 if __name__ == "__main__":
-
+    dir = 'results'
+    if os.path.exists(dir):
+        shutil.rmtree(dir)
+    os.makedirs(dir)
     # construct the argument parser and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--dataset", required=True,
