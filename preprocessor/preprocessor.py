@@ -77,13 +77,12 @@ def segment_sentences(image, debug=False):
 
     # Compute projection & find line starts.
     image = np.array(image)
-    projection = np.apply_along_axis(count_transitions, COLUMNS, image)
-    line_start_data = find_line_starts(projection, 100)
+    transition_projection = np.apply_along_axis(count_transitions, COLUMNS, image)
+    line_start_data = find_line_starts(transition_projection, 100)
 
     # Storage
     segmentation_lines = []  # to store the segmentation lines
     sentences = []  # for storing the actual segments
-    characters = []
 
     # Find and store the segments
     bar = ProgBar(len(line_start_data)+1, track_time=False, stream=sys.stdout, title='Segmenting sentences')
@@ -92,7 +91,7 @@ def segment_sentences(image, debug=False):
     for index, start in enumerate(line_start_data):
 
         # Find and cut out segment
-        line = find_path(start[0], start[1], image, debug)
+        line = find_path(start[0], start[1], image)
         segmentation_lines.append(line)
 
         # Store the segment
@@ -141,25 +140,24 @@ def segment_characters(image, debug=False):
         transition_projection = np.apply_along_axis(count_transitions, COLUMNS, image)
         ratio_projection = np.nan_to_num(np.divide(ink_projection, transition_projection))
 
-    line_starts = find_line_starts(ratio_projection, 15)
+    line_starts = find_line_starts(transition_projection, 15)
 
     # Find all the segments
     segmentation_lines = []  # to store the segmentation lines
+    characters = []
+
+    upper = None
     for index, start in enumerate(line_starts):
 
-        path = find_path(start[0], start[1], image, debug)
-        if valid_path(path):
-            segmentation_lines.append(path)
+        line = find_path(start[0], start[1], image)
+        if valid_path(line):
+            segmentation_lines.append(line)
 
-    # Actually split the image into segments
-    segments = []
-    upper = None
-    for index, lower in enumerate(segmentation_lines):
-        segments.append(np.transpose(cut_out_segment(upper, lower, image)))
-        upper = lower
+            characters.append(np.transpose(cut_out_segment(upper, line, image)))
+            upper = line
 
-        if index == len(segmentation_lines) - 1:
-            segments.append(np.transpose(cut_out_segment(upper, None, image)))
+            if index == len(segmentation_lines) - 1:
+                characters.append(np.transpose(cut_out_segment(upper, None, image)))
 
     if debug:
 
@@ -171,7 +169,7 @@ def segment_characters(image, debug=False):
         plt.title(f"Image segmentation")
         plt.show()
 
-    return segments
+    return characters
 
 
 def get_characters_from_image(filename, debug=False):
@@ -200,9 +198,11 @@ def get_characters_from_image(filename, debug=False):
         for index, character in enumerate(characters):
             cv2.imwrite(f"results/characters/test{i}_character_{index}.jpg", character)
 
+    return characters
+
 
 if __name__ == '__main__':
 
-    for i in range(0, 1):
+    for i in range(2, 3):
         file = f"../data/test{i}.jpg"
         get_characters_from_image(file, debug=True)
