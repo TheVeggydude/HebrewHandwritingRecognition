@@ -12,7 +12,7 @@ drop_output = 0.5  # {0.2, 0.25, 0.5}
 
 early_stopping = True
 monitor = "loss"  # {loss, val_loss}
-patience = 1  # {1, 2, 3, 4}
+patience = 2  # {1, 2, 3, 4}
 
 # Hyperparameters
 epochs = 30

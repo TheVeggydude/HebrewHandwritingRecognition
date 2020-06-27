@@ -2,8 +2,7 @@
 import matplotlib
 import cfg
 matplotlib.use("Agg")
-# import the necessary packages
-#from pyimagesearch.smallvggnet import SmallVGGNet
+
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
@@ -18,7 +17,6 @@ import pickle
 import cv2
 import os
 
-# import the necessary packages
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.layers import Conv2D
@@ -121,9 +119,6 @@ def Reformat_Image(ImageFilePath):
     background.paste(image, offset)
     return background
 
-    # background.save('out.png')
-	# print("Image has been resized !")
-
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--dataset", required=True,
@@ -191,7 +186,6 @@ aug = ImageDataGenerator(rotation_range=15, width_shift_range=0.1,
 model = SmallVGGNet.build(width=64, height=64, depth=3,
 	classes=len(lb.classes_))
 
-
 # initialize our initial learning rate, # of epochs to train for,
 # and batch size
 INIT_LR = cfg.init_learning_rate
@@ -223,6 +217,10 @@ print("[INFO] evaluating network...")
 predictions = model.predict(testX, batch_size=32)
 print(classification_report(testY.argmax(axis=1),
 	predictions.argmax(axis=1), target_names=lb.classes_))
+
+# Save the model
+print("[INFO] serializing network and label binarizer...")
+model.save("char_model_loss")
 
 # plot the training loss and accuracy
 N = np.arange(0, EPOCHS)
