@@ -132,3 +132,4 @@ dmypy.json
 .idea
 /data/
 /preprocessor/results/characters/
+/preprocessor/results/characters.zip
