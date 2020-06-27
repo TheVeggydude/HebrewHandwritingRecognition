@@ -155,7 +155,9 @@ for imagePath in imagePaths:
 		image = cv2.imread(imagePath)
 		image = cv2.resize(image, (64, 64))
 
+	image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 	data.append(image)
+	
 	# extract the class label from the image path and update the
 	# labels list
 	label = imagePath.split(os.path.sep)[-2]
@@ -163,6 +165,8 @@ for imagePath in imagePaths:
 
 # scale the raw pixel intensities to the range [0, 1]
 data = np.array(data, dtype="float") / 255.0
+data = np.expand_dims(data, axis=3)
+
 labels = np.array(labels)
 
 # partition the data into training and testing splits using 75% of
@@ -183,7 +187,7 @@ aug = ImageDataGenerator(rotation_range=15, width_shift_range=0.1,
 	height_shift_range=0.1, shear_range=0.2, zoom_range=0.2, fill_mode="nearest")
 
 # initialize our VGG-like Convolutional Neural Network
-model = SmallVGGNet.build(width=64, height=64, depth=3,
+model = SmallVGGNet.build(width=64, height=64, depth=1,
 	classes=len(lb.classes_))
 
 # initialize our initial learning rate, # of epochs to train for,
