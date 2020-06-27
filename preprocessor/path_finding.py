@@ -2,7 +2,7 @@ import sys
 import numpy as np
 
 from collections import namedtuple
-from preprocessor.utils import count_transitions
+from utils import count_transitions
 
 
 # Constants

@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
-import time
+import sys
 
 from scipy.signal import find_peaks
-from preprocessor.utils import count_transitions, count_ink
-from preprocessor.path_finding import find_path, extract_sub_image
+from pyprind import ProgBar
+from utils import count_transitions, count_ink
+from path_finding import find_path, extract_sub_image
 
 
 # Constants
@@ -81,37 +82,38 @@ def segment_sentences(image, debug=False):
 
     # Compute projection & find line starts.
     image = np.array(image)
-    print(f"Image shape: {image.shape}")
     projection = np.apply_along_axis(count_transitions, COLUMNS, image)
     line_start_data = find_line_starts(projection, 100)
 
-    # Find all the segments
-    segmentation_lines = [None for elem in line_start_data]  # to store the segmentation lines
+    # Storage
+    segmentation_lines = []  # to store the segmentation lines
+    segments = []  # for storing the actual segments
+
+    # Find and store the segments
+    upper_line = None
     for index, start in enumerate(line_start_data):
-        t = time.time()
-        print(f"Finding path for line at row {start} ({index + 1}/{len(line_start_data)}).")
 
-        segmentation_lines[index] = find_path(start[0], start[1], image, debug)
-        print(f"Path found in {time.time() - t} seconds!")
+        # Find and cut out segment
+        line = find_path(start[0], start[1], image, debug)
+        segmentation_lines.append(line)
 
-        if debug:
-            plt.plot(segmentation_lines[index][:, COLUMNS], segmentation_lines[index][:, ROWS])
+        # Store the segment
+        segments.append(cut_out_segment(upper_line, line, image))
+        upper_line = line
 
-    # Plot the segmentation
+        # One extra segment after the last line.
+        if index == len(line_start_data) - 1:
+            segments.append(cut_out_segment(upper_line, None, image))
+
     if debug:
+
+        # Plot the segmentation lines
+        for line in segmentation_lines:
+            plt.plot(line[:, COLUMNS], line[:, ROWS])
+
         plt.imshow(image, 'gray')
         plt.title(f"Image segmentation")
         plt.show()
-
-    # Actually split the image into segments
-    segments = []
-    upper = None
-    for index, lower in enumerate(segmentation_lines):
-        segments.append(cut_out_segment(upper, lower, image))
-        upper = lower
-
-        if index == len(segmentation_lines) - 1:
-            segments.append(cut_out_segment(upper, None, image))
 
     return segments
 
@@ -143,38 +145,22 @@ def segment_characters(image, debug=False):
     # Find all the segments
     segmentation_lines = []  # to store the segmentation lines
     for index, start in enumerate(line_starts):
-        t = time.time()
-        print(f"Finding path for line at row {start} ({index + 1}/{len(line_starts)}).")
 
         path = find_path(start[0], start[1], image, debug)
         if valid_path(path):
             segmentation_lines.append(path)
-            print(f"Path found in {time.time() - t} seconds!")
-        else:
-            print("Invalid path found!")
 
     # Actually split the image into segments
     segments = []
     upper = None
     for index, lower in enumerate(segmentation_lines):
-        segments.append(cut_out_segment(upper, lower, image))
+        segments.append(np.transpose(cut_out_segment(upper, lower, image)))
         upper = lower
 
         if index == len(segmentation_lines) - 1:
-            segments.append(cut_out_segment(upper, None, image))
+            segments.append(np.transpose(cut_out_segment(upper, None, image)))
 
     if debug:
-        peaks, properties = find_peaks(ratio_projection, prominence=1, distance=15)
-        line_start_rows = [start[0] for start in line_starts]
-
-        # # Plot the projection
-        # plt.plot(ratio_projection, 'red')
-        # plt.plot(peaks, ratio_projection[peaks], "x")
-        # plt.plot(line_start_rows, ratio_projection[line_start_rows], "o")
-        #
-        # plt.title("Projections")
-        # plt.legend(['Ink/Transitions', 'peaks'])
-        # plt.show()
 
         # Plot the segmentation lines
         for line in segmentation_lines:
@@ -187,29 +173,35 @@ def segment_characters(image, debug=False):
     return segments
 
 
+def get_characters_from_image(filename, debug=False):
+    print(f"Working on {filename}")
+    image = cv2.imread(filename, 0)
+
+    # Get image sentences
+    sentences = segment_sentences(image, debug)
+
+    # Get the characters per sentence
+    characters = None
+    for sentence in sentences:
+
+        # Crop sentence image to relevant area
+        _, _, _, sentence = extract_sub_image(sentence)
+        _, _, _, sentence = extract_sub_image(np.transpose(sentence))
+
+        # Find the characters
+        new_chars = segment_characters(sentence, debug)
+        if not characters:
+            characters = new_chars
+        else:
+            characters = characters + new_chars
+
+    if debug:
+        for index, character in enumerate(characters):
+            cv2.imwrite(f"results/characters/test{i}_character_{index}.jpg", character)
+
+
 if __name__ == '__main__':
 
     for i in range(0, 1):
-        print(f"Working on test image {i}")
-        img = cv2.imread(f"../data/test{i}.jpg", 0)
-
-        # Get image sentences
-        sentences = segment_sentences(img)
-
-        # Get the characters per sentence
-        characters = None
-        for sentence in sentences:
-
-            # Crop sentence image to relevant area
-            _, _, _, sentence = extract_sub_image(sentence)
-            _, _, _, sentence = extract_sub_image(np.transpose(sentence))
-
-            # Find the characters
-            new_chars = segment_characters(sentence)
-            if not characters:
-                characters = new_chars
-            else:
-                characters = characters + new_chars
-
-        for index, character in enumerate(characters):
-            cv2.imwrite(f"results/characters/test{i}_character_{index}.jpg", character)
+        file = f"../data/test{i}.jpg"
+        get_characters_from_image(file, debug=True)
