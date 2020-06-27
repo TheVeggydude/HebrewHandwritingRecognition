@@ -86,7 +86,6 @@ def segment_sentences(image, debug=False):
 
     # Find and store the segments
     bar = ProgBar(len(line_start_data)+1, track_time=False, stream=sys.stdout, title='Segmenting sentences')
-    bar.update()
     upper_line = None
     for index, start in enumerate(line_start_data):
 
@@ -99,11 +98,10 @@ def segment_sentences(image, debug=False):
         sentences.append(sentence)
         upper_line = line
 
-        # One extra segment after the last line.
-        if index == len(line_start_data) - 1:
-            sentences.append(cut_out_segment(upper_line, None, image))
-
         bar.update()
+
+    sentences.append(cut_out_segment(upper_line, None, image))
+    bar.update()
 
     if debug:
 
@@ -156,8 +154,7 @@ def segment_characters(image, debug=False):
             characters.append(np.transpose(cut_out_segment(upper, line, image)))
             upper = line
 
-            if index == len(segmentation_lines) - 1:
-                characters.append(np.transpose(cut_out_segment(upper, None, image)))
+    characters.append(np.transpose(cut_out_segment(upper, None, image)))
 
     if debug:
 
