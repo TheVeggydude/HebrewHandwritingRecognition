@@ -45,9 +45,7 @@ def convert_classes_to_hebrew(classes):
     }
     characters = []
     for character in classes:
-        print(f"Character: {character}")
         characters.append(hebrew.get(str(character)))
-    print("characters: ", characters)
 
     return characters
 
@@ -63,7 +61,6 @@ def save_result_style(results, index):
     filename = 'results/img_' + str(index) + '_style.txt'
     
     prediction = convert_class_to_style(mode(results))
-    print(f"prediction: {prediction}")
 
     f = open(filename, 'a')
     f.write(prediction + '\n')
