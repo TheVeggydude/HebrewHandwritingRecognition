@@ -4,6 +4,7 @@ import cv2
 import os
 import numpy as np
 
+from statistics import mode
 from imutils import paths
 from tensorflow.keras.models import load_model
 
@@ -22,7 +23,7 @@ def convert_classes_to_hebrew(classes):
         '7': '\u05DB',
         '8': '\u05DA',
         '9': '\u05DC',
-        '10': '\u05DE ',
+        '10': '\u05DE',
         '11': 'mem medial',
         '12': '\u05DF',
         '13': 'nun medial',
@@ -32,23 +33,41 @@ def convert_classes_to_hebrew(classes):
         '17': '\u05E8',
         '18': '\u05E1',
         '19': '\u05E9',
-        '20': '\u05EA(taw)',
+        '20': '\u05EA',
         '21': '\u05D8',
         '22': '\u05E5',
         '23': 'tsadi medial',
-        '24': '\u05D5(waw)',
+        '24': '\u05D5',
         '25': '\u05D9',
         '26': '\u05D6'
     }
     characters = []
-    for character in np.array2string(classes):
-        if character.isdigit():
-            characters.append(hebrew.get(character))
+    for character in classes:
+        print(f"Character: {character}")
+        characters.append(hebrew.get(str(character)))
     print("characters: ", characters)
 
     return characters
 
-def save_results(results, index):
+def convert_class_to_style(result):
+    styles = {
+        0: 'Archaic',
+        1: 'Hasmonean',
+        2: 'Herodian'
+    }
+    return styles.get(result)
+
+def save_result_style(results, index):
+    filename = 'results/img_' + str(index) + '_style.txt'
+    
+    prediction = convert_class_to_style(mode(results))
+    print(f"prediction: {prediction}")
+
+    f = open(filename, 'a')
+    f.write(prediction + '\n')
+    f.close()
+
+def save_results_characters(results, index):
     filename = 'results/img_' + str(index) + '_characters.txt'
 
     if os.path.exists(filename):
@@ -63,7 +82,10 @@ def save_results(results, index):
 
 def predict_chars():
     # Load character recognition model
-    model = load_model("character_recognizer/char_model_loss")
+    character_model = load_model("character_recognizer/char_model_loss")
+
+    # Load style model
+    style_model = load_model("style_classifier/model3_new.h5")
 
     # initialize the data and labels
     print("[INFO] loading images...")
@@ -79,6 +101,7 @@ def predict_chars():
     # loop over the input images
     for imagePath in imagePaths:
         image_number += 1
+        styles = []
 
         # Get characters from each image
         characters = get_characters_from_image(imagePath)
@@ -105,7 +128,7 @@ def predict_chars():
             data = np.expand_dims(data, axis=3)
             
             # Predict classes of characters from line
-            y_new = np.argmax(model.predict(data), axis = -1)
+            y_new = np.argmax(character_model.predict(data), axis = -1)
             y_new = np.flip(y_new)
 
             # Convert classes to hebrew characters
@@ -115,10 +138,17 @@ def predict_chars():
             print(f"Classes of characters: {y_new}")
 
             # Write classes to file
-            save_results(y_new, image_number)
-    exit()
+            save_results_characters(y_new, image_number)
 
-
+            # Predict style of image
+            style = np.argmax(style_model.predict(data), axis = -1)
+            style = np.ndarray.tolist(style)
+            styles = styles + style
+            print(f"STYLES = {styles}")
+            print(f"TYPE STYLE = {type(styles)}")
+            
+        # Save style of image
+        save_result_style(styles, image_number)
     pass
 
 if __name__ == "__main__":
