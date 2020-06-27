@@ -5,13 +5,8 @@ import sys
 
 from scipy.signal import find_peaks
 from pyprind import ProgBar
-from utils import count_transitions, count_ink
-from path_finding import find_path, extract_sub_image
-
-
-# Constants
-ROWS = 0
-COLUMNS = 1
+from utils import count_transitions, count_ink, extract_sub_image, COLUMNS, ROWS, MOVES
+from path_finding import find_path
 
 
 def binarize_image(image):
