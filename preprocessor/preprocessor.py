@@ -140,7 +140,7 @@ def segment_characters(image, debug=False):
         transition_projection = np.apply_along_axis(count_transitions, COLUMNS, image)
         ratio_projection = np.nan_to_num(np.divide(ink_projection, transition_projection))
 
-    line_starts = find_line_starts(transition_projection, 15)
+    line_starts = find_line_starts(ratio_projection, 1)
 
     # Find all the segments
     segmentation_lines = []  # to store the segmentation lines
@@ -192,8 +192,9 @@ def get_characters_from_image(filename, debug=False):
         characters.append(new_chars)
 
     if debug:
-        for index, character in enumerate(characters):
-            cv2.imwrite(f"results/characters/test{i}_character_{index}.jpg", character)
+        for line_n, line in enumerate(characters):
+            for char_n, character in enumerate(line):
+                cv2.imwrite(f"results/characters/line{line_n}_character_{char_n}.jpg", character)
 
     return characters
 
@@ -202,5 +203,4 @@ if __name__ == '__main__':
 
     for i in range(0, 1):
         file = f"../data/test{i}.jpg"
-        chars = get_characters_from_image(file, debug=False)
-        print(chars)
+        chars = get_characters_from_image(file, debug=True)
