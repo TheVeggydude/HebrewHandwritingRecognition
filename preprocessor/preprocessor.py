@@ -180,7 +180,7 @@ def get_characters_from_image(filename, debug=False):
     sentences = segment_sentences(image, debug)
 
     # Get the characters per sentence
-    characters = None
+    characters = []
     for sentence in sentences:
 
         # Crop sentence image to relevant area
@@ -189,10 +189,7 @@ def get_characters_from_image(filename, debug=False):
 
         # Find the characters
         new_chars = segment_characters(sentence, debug)
-        if not characters:
-            characters = new_chars
-        else:
-            characters = characters + new_chars
+        characters.append(new_chars)
 
     if debug:
         for index, character in enumerate(characters):
@@ -203,6 +200,7 @@ def get_characters_from_image(filename, debug=False):
 
 if __name__ == '__main__':
 
-    for i in range(2, 3):
+    for i in range(0, 1):
         file = f"../data/test{i}.jpg"
-        get_characters_from_image(file, debug=True)
+        chars = get_characters_from_image(file, debug=False)
+        print(chars)
