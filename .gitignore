@@ -132,6 +132,8 @@ dmypy.json
 # Editor stuff
 .idea
 /data/
+/preprocessor/results/characters/
+/preprocessor/results/characters.zip
 *.jpg
 *.jpeg
 *.png
