@@ -86,14 +86,7 @@ def get_lowest_prio_state(open_list):
     return current
 
 
-def print_prio_list(open_list):
-    for elem in open_list:
-        print(elem.coords)
-
-
-def a_star(row, maze, debug=False):
-
-    # TODO replace open_list with 2d array of states in order to remove costly search and remove operations.
+def a_star(row, maze):
     open_list = []
     visited = set()
 
@@ -150,7 +143,7 @@ def a_star(row, maze, debug=False):
                 open_list.append(new_elem)
 
 
-def find_path(row, peaks, image, debug=False):
+def find_path(row, peaks, image):
     """
     Finds a path between left most edge and the corresponding right edge of the image at a specific row height. Performs
     some optimizations on the image array to decrease computation times.
@@ -165,7 +158,7 @@ def find_path(row, peaks, image, debug=False):
     left_margin, right_margin, row_offset, sub_image = extract_sub_image(image, peaks)
 
     # Find path to end node
-    node = a_star(row-row_offset, sub_image, debug)
+    node = a_star(row-row_offset, sub_image)
 
     # In case of no path found, return none.
     if not node:
