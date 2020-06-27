@@ -22,8 +22,8 @@ def convert_classes_to_hebrew(classes):
         '7': '\u05DB',
         '8': '\u05DA',
         '9': '\u05DC',
-        '10': 'mem medial',
-        '11': '\u05DD',
+        '10': '\u05DE ',
+        '11': 'mem medial',
         '12': '\u05DF',
         '13': 'nun medial',
         '14': '\u05E4',
@@ -40,8 +40,13 @@ def convert_classes_to_hebrew(classes):
         '25': '\u05D9',
         '26': '\u05D6'
     }
-    print(hebrew)
-    pass
+    characters = []
+    for character in np.array2string(classes):
+        if character.isdigit():
+            characters.append(hebrew.get(character))
+    print("characters: ", characters)
+
+    return characters
 
 def save_results(results, index):
     filename = 'results/img_' + str(index) + '_characters.txt'
@@ -52,7 +57,7 @@ def save_results(results, index):
         append_write = 'w' # make a new file if not
     
     f = open(filename, append_write)
-    f.write(np.array2string(results) + '\n')
+    f.write(''.join(results) + '\n')
     f.close()
 
 
@@ -101,9 +106,10 @@ def predict_chars():
             
             # Predict classes of characters from line
             y_new = np.argmax(model.predict(data), axis = -1)
+            y_new = np.flip(y_new)
 
             # Convert classes to hebrew characters
-            convert_classes_to_hebrew(y_new)
+            y_new = convert_classes_to_hebrew(y_new)
 
             # Print classes of characters
             print(f"Classes of characters: {y_new}")
