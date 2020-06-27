@@ -1,0 +1,1 @@
+python3 train_vgg.py -d monkbrill-jpg/monkbrill2/ -l /home/merkel/Documents/University/HebrewHandwritingRecognition/character_recognizer -p /home/merkel/Documents/University/HebrewHandwritingRecognition/character_recognizer -m /home/merkel/Documents/University/HebrewHandwritingRecognition/character_recognizer
