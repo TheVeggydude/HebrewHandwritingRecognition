@@ -94,20 +94,19 @@ def predict_chars():
     data = []
 
     # grab the image paths and randomly shuffle them
-    imagePaths = sorted(list(paths.list_images(args["dataset"])))
+    image_paths = sorted(list(paths.list_images(args["dataset"])))
     random.seed(42)
-    random.shuffle(imagePaths)
+    random.shuffle(image_paths)
 
     image_number = -1
     # loop over the input images
-    for imagePath in imagePaths:
+    for imagePath in image_paths:
         image_number += 1
         styles = []
 
         # Get characters from each image
         characters = get_characters_from_image(imagePath)
 
-        # TODO: REVERSE ORDER OF LISTS SO IT'S HEBREW
         # Loop through every segmented line
         for line in characters:
             line_characters = []
@@ -142,14 +141,13 @@ def predict_chars():
 
         # Save style of image
         save_result_style(styles, image_number)
-    pass
 
 
 if __name__ == "__main__":
-    dir = 'results'
-    if os.path.exists(dir):
-        shutil.rmtree(dir)
-    os.makedirs(dir)
+    results_dir = 'results'
+    if os.path.exists(results_dir):
+        shutil.rmtree(results_dir)
+    os.makedirs(results_dir)
     # construct the argument parser and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--dataset", required=True,
@@ -158,5 +156,3 @@ if __name__ == "__main__":
     args = vars(ap.parse_args())
 
     predict_chars()
-
-    pass
