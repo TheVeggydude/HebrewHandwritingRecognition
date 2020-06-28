@@ -6,7 +6,7 @@ Scrolls. The code is free to use, however, the data will not be provided as it i
 1. `sudo -H pip3 install --upgrade pip # latest pip3`
 2. `git clone https://github.com/TheVeggydude/HebrewHandwritingRecognition.git`
 3. `cd HebrewHandwritingRecognition/`
-4. `pip3 install -r requirements.txt --no-index --find-links file:///tmp/packages`
+4. `pip3 install -r pipeline/requirements.txt --no-index --find-links file:///tmp/packages`
 
 Because of the NDA no images are on the repository. Move all `jpg` testing images of the form `img_0, img1,..., imgN` inside the `image-data` folder.
 
