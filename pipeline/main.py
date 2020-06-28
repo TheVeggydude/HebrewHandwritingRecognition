@@ -122,6 +122,8 @@ def predict_chars():
             
             # Predict classes of characters from line
             y_new = np.argmax(character_model.predict(data), axis = -1)
+
+            # Flip predictions so they are written from right to left
             y_new = np.flip(y_new)
 
             # Convert classes to hebrew characters
