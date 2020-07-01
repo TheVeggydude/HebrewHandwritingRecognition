@@ -25,10 +25,10 @@ def convert_classes_to_hebrew(classes):
         '7': '\u05DB',
         '8': '\u05DA',
         '9': '\u05DC',
-        '10': '\u05DE',
-        '11': 'mem medial',
+        '10': '\u05DD',
+        '11': '\u05DE',
         '12': '\u05DF',
-        '13': 'nun medial',
+        '13': '\u05E0',
         '14': '\u05E4',
         '15': '\u05E3',
         '16': '\u05E7',
@@ -38,7 +38,7 @@ def convert_classes_to_hebrew(classes):
         '20': '\u05EA',
         '21': '\u05D8',
         '22': '\u05E5',
-        '23': 'tsadi medial',
+        '23': '\u05E6',
         '24': '\u05D5',
         '25': '\u05D9',
         '26': '\u05D6'
@@ -57,8 +57,8 @@ def convert_class_to_style(result):
     }
     return styles.get(result)
 
-def save_result_style(results, index):
-    filename = 'results/img_' + str(index) + '_style.txt'
+def save_result_style(results, index, image_name):
+    filename = 'results/' + image_name + '_style.txt'
     
     prediction = convert_class_to_style(mode(results))
 
@@ -66,8 +66,8 @@ def save_result_style(results, index):
     f.write(prediction + '\n')
     f.close()
 
-def save_results_characters(results, index):
-    filename = 'results/img_' + str(index) + '_characters.txt'
+def save_results_characters(results, index, image_name):
+    filename = 'results/'+ image_name + '_characters.txt'
 
     if os.path.exists(filename):
         append_write = 'a' # append if already exists
@@ -98,6 +98,9 @@ def predict_chars():
     image_number = -1
     # loop over the input images
     for imagePath in imagePaths:
+        image_name = imagePath.split("/")[1]
+        image_name = image_name.split(".")[0]
+        print(f"Image name: {image_name}")
         image_number += 1
         styles = []
 
@@ -130,7 +133,7 @@ def predict_chars():
             y_new = convert_classes_to_hebrew(y_new)
 
             # Write classes to file
-            save_results_characters(y_new, image_number)
+            save_results_characters(y_new, image_number, image_name)
 
             # Predict style of image
             style = np.argmax(style_model.predict(data), axis = -1)
@@ -138,7 +141,7 @@ def predict_chars():
             styles = styles + style
             
         # Save style of image
-        save_result_style(styles, image_number)
+        save_result_style(styles, image_number, image_name)
     pass
 
 if __name__ == "__main__":
