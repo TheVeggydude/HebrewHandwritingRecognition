@@ -98,7 +98,7 @@ def predict_chars():
 
     image_number = -1
     # loop over the input images
-    for imagePath in imagePaths:
+    for imagePath in image_paths:
         image_name = imagePath.split("/")[1]
         image_name = image_name.split(".")[0]
 
