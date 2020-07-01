@@ -5,13 +5,13 @@ import cv2
 import os
 import numpy as np
 
-
 from statistics import mode
 from imutils import paths
 from tensorflow.keras.models import load_model
 
 from character_recognizer import cfg
 from preprocessor.preprocessor import get_characters_from_image
+
 
 def convert_classes_to_hebrew(classes):
     hebrew = {
@@ -49,6 +49,7 @@ def convert_classes_to_hebrew(classes):
 
     return characters
 
+
 def convert_class_to_style(result):
     styles = {
         0: 'Archaic',
@@ -70,10 +71,10 @@ def save_results_characters(results, index, image_name):
     filename = 'results/'+ image_name + '_characters.txt'
 
     if os.path.exists(filename):
-        append_write = 'a' # append if already exists
+        append_write = 'a'  # append if already exists
     else:
-        append_write = 'w' # make a new file if not
-    
+        append_write = 'w'  # make a new file if not
+
     f = open(filename, append_write)
     f.write(''.join(results) + '\n')
     f.close()
@@ -91,23 +92,22 @@ def predict_chars():
     data = []
 
     # grab the image paths and randomly shuffle them
-    imagePaths = sorted(list(paths.list_images(args["dataset"])))
+    image_paths = sorted(list(paths.list_images(args["dataset"])))
     random.seed(42)
-    random.shuffle(imagePaths)
+    random.shuffle(image_paths)
 
     image_number = -1
     # loop over the input images
     for imagePath in imagePaths:
         image_name = imagePath.split("/")[1]
         image_name = image_name.split(".")[0]
-        print(f"Image name: {image_name}")
+
         image_number += 1
         styles = []
 
         # Get characters from each image
         characters = get_characters_from_image(imagePath)
 
-        # TODO: REVERSE ORDER OF LISTS SO IT'S HEBREW
         # Loop through every segmented line
         for line in characters:
             line_characters = []
@@ -122,9 +122,9 @@ def predict_chars():
             data = np.array(line_characters)
             data = np.array(data, dtype="float") / 255.0
             data = np.expand_dims(data, axis=3)
-            
+
             # Predict classes of characters from line
-            y_new = np.argmax(character_model.predict(data), axis = -1)
+            y_new = np.argmax(character_model.predict(data), axis=-1)
 
             # Flip predictions so they are written from right to left
             y_new = np.flip(y_new)
@@ -136,26 +136,25 @@ def predict_chars():
             save_results_characters(y_new, image_number, image_name)
 
             # Predict style of image
-            style = np.argmax(style_model.predict(data), axis = -1)
+            style = np.argmax(style_model.predict(data), axis=-1)
             style = np.ndarray.tolist(style)
             styles = styles + style
-            
+
         # Save style of image
         save_result_style(styles, image_number, image_name)
     pass
 
+
 if __name__ == "__main__":
-    dir = 'results'
-    if os.path.exists(dir):
-        shutil.rmtree(dir)
-    os.makedirs(dir)
+    results_dir = 'results'
+    if os.path.exists(results_dir):
+        shutil.rmtree(results_dir)
+    os.makedirs(results_dir)
     # construct the argument parser and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--dataset", required=True,
-        help="path to input dataset of images")
+                    help="path to input dataset of images")
 
     args = vars(ap.parse_args())
 
     predict_chars()
-
-    pass

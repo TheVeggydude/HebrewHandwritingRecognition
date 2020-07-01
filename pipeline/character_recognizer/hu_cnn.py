@@ -25,6 +25,7 @@ import random
 import os
 import numpy as np
 
+
 # fit and evaluate a model
 def evaluate_model(trainX, trainY, testX, testY):
     verbose, epochs, batch_size = 0, 30, 32
@@ -47,28 +48,31 @@ def evaluate_model(trainX, trainY, testX, testY):
     _, accuracy = model.evaluate(testX, testY, batch_size=batch_size, verbose=0)
     return accuracy
 
+
 # summarize scores
 def summarize_results(scores):
-	print(scores)
-	m, s = mean(scores), std(scores)
-	print('Accuracy: %.3f%% (+/-%.3f)' % (m, s))
+    print(scores)
+    m, s = mean(scores), std(scores)
+    print('Accuracy: %.3f%% (+/-%.3f)' % (m, s))
+
 
 # run an experiment
 def run_experiment(trainX, trainY, testX, testY, repeats=10):
-	# repeat experiment
-	scores = list()
-	for r in range(repeats):
-		score = evaluate_model(trainX, trainY, testX,testY)
-		score = score * 100.0
-		print('>#%d: %.3f' % (r+1, score))
-		scores.append(score)
-	# summarize results
-	summarize_results(scores)
+    # repeat experiment
+    scores = list()
+    for r in range(repeats):
+        score = evaluate_model(trainX, trainY, testX, testY)
+        score = score * 100.0
+        print('>#%d: %.3f' % (r + 1, score))
+        scores.append(score)
+    # summarize results
+    summarize_results(scores)
+
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--dataset", required=True,
-	help="path to input dataset of images")
+                help="path to input dataset of images")
 # ap.add_argument("-m", "--model", required=True,
 # 	help="path to output trained model")
 # ap.add_argument("-l", "--label-bin", required=True,
