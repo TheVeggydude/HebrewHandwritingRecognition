@@ -39,7 +39,7 @@ def evaluate_model(trainX, trainY, testX, testY):
     model.add(Flatten())
     model.add(Dense(100, activation='relu'))
     model.add(Dense(n_outputs, activation='softmax'))
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
     # fit network
     print("FIT TRAINX:", trainX.shape)
     print("FIT TRAINY:", trainY.shape)
