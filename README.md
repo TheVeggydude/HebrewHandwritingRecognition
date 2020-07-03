@@ -14,10 +14,6 @@ Because of the NDA no images are on the repository. Move all `jpg` testing image
 
 After running `./test.sh` the program will read every image in the `image-data` folder one by one and segment it into characters. The characters are fed into the character recognition model found in the`character_recognizer/char_model_loss` folder. Each character prediction of an image is written in a separate text file in the `results` folder. The segmented characters are also fed into the style recognition model found at `style_classifier/model3_new.h5`. Each character is used to classify the style of the image, so each character generates a prediction. The predictions are aggregated into a list and the `mode` of the list is the official style of the image.
 
-## Disclaimer about `medial` letters! 
-
-Each character class is a natural number in the range `[0 26]`. For the letters represented by the labels `11, 13, 23` we could not find the designated unicode character. These are exclusively the `medial` characters. If you have access to these unicodes, please replace the current dictionary values in `pipeline/main.py` for cleaner printing.
-
 ## Modules
 ### Preprocessor
 The preprocessor takes binarized images of the source data and turns them into individual characters. This is done 
