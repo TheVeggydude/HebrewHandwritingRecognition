@@ -45,4 +45,4 @@ sklearn == 0.0
 # pipeline/character_recognizer/predictor.py: 3
 # pipeline/character_recognizer/train_vgg.py: 9,10,20,21,22,23,24,25,26,27,28,29
 # pipeline/main.py: 11
-tensorflow == 2.2.0
+tensorflow == 2.6.4
