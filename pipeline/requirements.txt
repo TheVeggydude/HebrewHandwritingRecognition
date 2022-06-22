@@ -26,7 +26,7 @@ matplotlib == 3.2.1
 # pipeline/preprocessor/path_finding.py: 2
 # pipeline/preprocessor/preprocessor.py: 3
 # pipeline/preprocessor/utils.py: 1
-numpy == 1.18.4
+numpy == 1.22.0
 
 # pipeline/character_recognizer/hu_cnn.py: 23
 # pipeline/character_recognizer/train_vgg.py: 17
