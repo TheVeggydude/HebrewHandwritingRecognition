@@ -5,7 +5,7 @@
 Keras == 2.3.1
 
 # pipeline/character_recognizer/train_vgg.py: 108
-Pillow == 5.1.0
+Pillow == 9.3.0
 
 # pipeline/preprocessor/preprocessor.py: 7
 PyPrind == 2.11.2
